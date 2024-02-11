@@ -50,19 +50,21 @@ public class Drivetrain extends SubsystemBase {
   	{	
 		if (gyroIO == null) gyroIO = new GyroIOSim(this);
 		this.gyroIO = gyroIO;
+		resetGyro();
+
 		modules[0] = new SwerveModule(flModuleIO, Place.FrontLeft);
 		modules[1] = new SwerveModule(frModuleIO, Place.FrontRight);
 		modules[2] = new SwerveModule(blModuleIO, Place.BackLeft);
 		modules[3] = new SwerveModule(brModuleIO, Place.BackRight);
 
 		poseEstimator = new SwerveDrivePoseEstimator( this.kinematics,
-													getRobotAngle().unaryMinus(),
+													getRobotAngle(),
 													this.getModulePositions(),
 													new Pose2d() 	
 													);
 
 		pose = new SwerveDriveOdometry( this.kinematics,
-										getRobotAngle().unaryMinus(),
+										getRobotAngle(),
 										this.getModulePositions(),
 										new Pose2d() 	
 										);
@@ -163,7 +165,7 @@ public class Drivetrain extends SubsystemBase {
 	 */
 	@AutoLogOutput(key = "Robot/Rotation")
 	public Rotation2d getRobotAngle() {
-		return this.gyroInputs.yawPosition;	
+		return this.gyroInputs.yawPosition.unaryMinus();	
 	}
 
 	public double getAngularVelocity() {
@@ -177,7 +179,7 @@ public class Drivetrain extends SubsystemBase {
 	 * @return the continuous rotations and partial rotations
 	 */
 	public double getGyroRotations() {
-		return getRobotAngle().unaryMinus().getRotations();
+		return getRobotAngle().getRotations();
 	}
 
 	public SwerveModule[] getSwerveModules() {return this.modules;}
@@ -194,14 +196,14 @@ public class Drivetrain extends SubsystemBase {
 	 */
 	public void resetOdometryEstimator(Pose2d pose) {
 		this.poseEstimator.resetPosition(
-			getRobotAngle().unaryMinus(),
+			getRobotAngle(),
 			this.getModulePositions(),
 			pose);
 	}
 
 	public void resetOdometry(Pose2d newPose) {
 		this.pose.resetPosition(
-			getRobotAngle().unaryMinus(),
+			getRobotAngle(),
 			this.getModulePositions(),
 			newPose);
 	}
@@ -269,8 +271,8 @@ public class Drivetrain extends SubsystemBase {
 		}
 		
 		// Update the odometry pose
-		this.pose.update(getRobotAngle().unaryMinus(), this.getModulePositions());
-		this.poseEstimator.update(getRobotAngle().unaryMinus(), this.getModulePositions());
+		this.pose.update(getRobotAngle(), this.getModulePositions());
+		this.poseEstimator.update(getRobotAngle(), this.getModulePositions());
 
 		// Fuse odometry pose with vision data if we have it.
 		updatePoseEstimatorWithVision();

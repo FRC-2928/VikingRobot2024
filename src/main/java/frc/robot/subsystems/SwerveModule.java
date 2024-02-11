@@ -247,7 +247,7 @@ public class SwerveModule {
     public void applyState(final SwerveModuleState state) {
         // this.targetVelocity = state.speedMetersPerSecond;
         // this.targetAngle = state.angle.unaryMinus();
-        this.desiredModuleState = new SwerveModuleState(state.speedMetersPerSecond, state.angle.unaryMinus());
+        this.desiredModuleState = new SwerveModuleState(state.speedMetersPerSecond, state.angle);
     }
 
     public SwerveModulePosition updateModulePosition() {
