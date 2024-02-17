@@ -5,10 +5,13 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.drivetrain.JoystickDrive;
 import frc.robot.commands.drivetrain.LockWheels;
+import frc.robot.commands.shooter.Intake;
+import frc.robot.commands.shooter.Shoot;
 import frc.robot.oi.DriverOI;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.GyroIO;
@@ -17,6 +20,7 @@ import frc.robot.subsystems.SwerveModule;
 import frc.robot.subsystems.ModuleIO;
 import frc.robot.subsystems.ModuleIOSim;
 import frc.robot.subsystems.ModuleIOTalonFX;
+import frc.robot.subsystems.Shooter;
 
 public class RobotContainer {
 
@@ -26,6 +30,7 @@ public class RobotContainer {
 	// public final OperatorOI operatorOI = new OperatorOI(new CommandXboxController(1));
 
 	public final Drivetrain drivetrain;
+    public final Shooter shooter = new Shooter();
 
 	public RobotContainer() { 
 		
@@ -64,14 +69,13 @@ public class RobotContainer {
 		}
 
 		this.autonomousChooser = new LoggedDashboardChooser<>("Autonomous Routine", AutonomousRoutines.createAutonomousChooser(this.drivetrain));
-		
-		this.configureDriverControls(); 
 	}
 
-	private void configureDriverControls() {
+	public void configureDriverControls() {
 		// this.driverOI.resetFOD.whileTrue(new RunCommand(() -> this.drivetrain.gyro.setYaw(0)));
 		this.driverOI.resetFOD.whileTrue(new RunCommand(() -> this.drivetrain.resetGyro())); // Y Button
 		this.driverOI.lock.whileTrue(new LockWheels(this.drivetrain, this.driverOI)); // Left Bumper
+        this.driverOI.shoot.whileTrue(new ConditionalCommand(new Intake(), new Shoot(), this.shooter.launcher.getSensorCollection()::isFwdLimitSwitchClosed)); // Left Bumper
 	}
 	
 	public void teleop() { this.drivetrain.setDefaultCommand(new JoystickDrive(this.drivetrain, this.driverOI)); }

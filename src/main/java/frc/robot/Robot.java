@@ -20,7 +20,7 @@ public class Robot extends LoggedRobot {
 	public Optional<DriverStation.Alliance> alliance;
 
 	private Command autonomousCommand;
-	private RobotContainer container;
+	public RobotContainer container;
 
 	public Robot() {
 		super();
@@ -61,6 +61,7 @@ public class Robot extends LoggedRobot {
 
 		this.alliance = DriverStation.getAlliance();
 		this.container = new RobotContainer();
+        this.container.configureDriverControls();
 	}
 
 	@Override

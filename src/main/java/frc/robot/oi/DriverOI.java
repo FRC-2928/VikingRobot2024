@@ -24,8 +24,10 @@ public class DriverOI extends BaseOI {
 			this.moveRotationY = () -> this.hid.getRawAxis(3);
 		}
 		
-		// this.slow = this.controller::getRightTriggerAxis;
-		this.alignShooter = this.controller::getRightTriggerAxis;
+		this.slow = this.controller::getLeftTriggerAxis;
+
+        this.shoot = new Trigger(() -> this.controller.getRightTriggerAxis() > 0.5);
+		this.alignShooter = this.controller.rightBumper();
 
 		this.lock = this.controller.leftBumper();
 
@@ -40,8 +42,11 @@ public class DriverOI extends BaseOI {
 	public final Supplier<Double> moveRotationX;
 	public final Supplier<Double> moveRotationY;
 
-	// public final Supplier<Double> slow;
-	public final Supplier<Double> alignShooter;
+	public final Supplier<Double> slow;
+
+    public final Trigger shoot;
+
+	public final Trigger alignShooter;
 
 	public final Trigger lock;
 

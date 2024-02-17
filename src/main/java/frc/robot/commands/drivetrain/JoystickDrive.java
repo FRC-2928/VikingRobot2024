@@ -42,10 +42,10 @@ public class JoystickDrive extends Command {
 		double omegaRadPerSec = 0;
 
 		// Check if we're aligning the shooter with the target (rightTriggerAxis)
-		double alignTriggerValue = MathUtil.applyDeadband(this.oi.alignShooter.get(), 0.1);
-		SmartDashboard.putNumber("JoystickDrive/alignTriggerValue", alignTriggerValue);
+		boolean alignTriggerValue = this.oi.alignShooter.getAsBoolean();
+		SmartDashboard.putBoolean("JoystickDrive/alignTriggerValue", alignTriggerValue);
 
-		if (alignTriggerValue > 0) {
+		if (alignTriggerValue) {
 			// Align robot with target	
 			linearVelocity = getAlignTarget();
 		} else {
