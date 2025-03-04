@@ -18,14 +18,17 @@ import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.hardware.Pigeon2;
-import edu.wpi.first.units.*;
+import com.ctre.phoenix6.sim.Pigeon2SimState;
+
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.*;
 import frc.robot.Constants;
 
 /** IO implementation for Pigeon2 */
 public class GyroIOReal implements GyroIO {
 	private final Pigeon2 pigeon = new Pigeon2(Constants.CAN.CTRE.pigeon, Constants.CAN.CTRE.bus);
-	private final StatusSignal<Double> yaw = this.pigeon.getYaw();
-	private final StatusSignal<Double> yawVelocity = this.pigeon.getAngularVelocityZWorld();
+	private final StatusSignal<Angle> yaw = this.pigeon.getYaw();
+	private final StatusSignal<AngularVelocity> yawVelocity = this.pigeon.getAngularVelocityZWorld();
 
 	public GyroIOReal() {
 		this.pigeon.getConfigurator().apply(new Pigeon2Configuration());
@@ -43,5 +46,15 @@ public class GyroIOReal implements GyroIO {
 	}
 
 	@Override
+	public void setYaw(Angle yaw){
+		this.pigeon.setYaw(yaw.in(Units.Degrees));
+	}
+	@Override
 	public void reset() { this.pigeon.reset(); }
+
+	@Override
+	public void simulationPeriodic(Angle rotation) {
+		Pigeon2SimState simState = pigeon.getSimState();
+		simState.setRawYaw(pigeon.getYaw().getValue().plus(rotation));
+	}
 }

@@ -1,0 +1,43 @@
+{
+ "name":"SimpleScore",
+ "version":1,
+ "snapshot":{
+  "waypoints":[
+    {"x":7.274248123168945, "y":4.14943265914917, "heading":3.126442506347001, "intervals":8, "split":false, "fixTranslation":true, "fixHeading":true, "overrideIntervals":false},
+    {"x":5.942775249481201, "y":4.188267230987549, "heading":3.141592653589793, "intervals":40, "split":false, "fixTranslation":true, "fixHeading":true, "overrideIntervals":false}],
+  "constraints":[
+    {"from":"first", "to":null, "data":{"type":"StopPoint", "props":{}}, "enabled":true},
+    {"from":"last", "to":null, "data":{"type":"StopPoint", "props":{}}, "enabled":true},
+    {"from":"first", "to":"last", "data":{"type":"KeepInRectangle", "props":{"x":0.0, "y":0.0, "w":17.548, "h":8.052}}, "enabled":true}],
+  "targetDt":0.05
+ },
+ "params":{
+  "waypoints":[
+    {"x":{"exp":"7.274248123168945 m", "val":7.274248123168945}, "y":{"exp":"4.14943265914917 m", "val":4.14943265914917}, "heading":{"exp":"3.126442506347001 rad", "val":3.126442506347001}, "intervals":8, "split":false, "fixTranslation":true, "fixHeading":true, "overrideIntervals":false},
+    {"x":{"exp":"H.x", "val":5.942775249481201}, "y":{"exp":"H.y", "val":4.188267230987549}, "heading":{"exp":"H.heading", "val":3.141592653589793}, "intervals":40, "split":false, "fixTranslation":true, "fixHeading":true, "overrideIntervals":false}],
+  "constraints":[
+    {"from":"first", "to":null, "data":{"type":"StopPoint", "props":{}}, "enabled":true},
+    {"from":"last", "to":null, "data":{"type":"StopPoint", "props":{}}, "enabled":true},
+    {"from":"first", "to":"last", "data":{"type":"KeepInRectangle", "props":{"x":{"exp":"0 m", "val":0.0}, "y":{"exp":"0 m", "val":0.0}, "w":{"exp":"17.548 m", "val":17.548}, "h":{"exp":"8.052 m", "val":8.052}}}, "enabled":true}],
+  "targetDt":{
+   "exp":"0.05 s",
+   "val":0.05
+  }
+ },
+ "trajectory":{
+  "sampleType":"Swerve",
+  "waypoints":[0.0,0.37602],
+  "samples":[
+    {"t":0.0, "x":7.27425, "y":4.14943, "heading":3.12644, "vx":0.0, "vy":0.0, "omega":0.0, "ax":-56.77852, "ay":1.65547, "alpha":3.4142, "fx":[-966.2959,-965.20011,-965.30683,-966.34302], "fy":[9.77952,47.04843,45.84789,9.96065]},
+    {"t":0.047, "x":7.21153, "y":4.15126, "heading":3.12644, "vx":-2.66871, "vy":0.07781, "omega":0.16047, "ax":-41.04855, "ay":1.19714, "alpha":-3.40823, "fx":[-702.27115,-702.9473,-694.18948,-693.48832], "fy":[34.01672,6.57549,6.33003,34.53005]},
+    {"t":0.094, "x":7.04075, "y":4.15624, "heading":3.13399, "vx":-4.59809, "vy":0.13408, "omega":0.00028, "ax":-0.0003, "ay":0.00033, "alpha":-0.00007, "fx":[-0.00533,-0.00533,-0.00494,-0.00494], "fy":[0.00576,0.00537,0.00537,0.00576]},
+    {"t":0.14101, "x":6.82463, "y":4.16254, "heading":3.134, "vx":-4.5981, "vy":0.13409, "omega":0.00028, "ax":0.00001, "ay":0.00033, "alpha":0.0, "fx":[0.00015,0.00015,0.00015,0.00015], "fy":[0.00562,0.00562,0.00562,0.00562]},
+    {"t":0.18801, "x":6.60851, "y":4.16885, "heading":3.13401, "vx":-4.5981, "vy":0.13411, "omega":0.00028, "ax":0.00001, "ay":0.00034, "alpha":0.0, "fx":[0.00015,0.00015,0.00015,0.00015], "fy":[0.00583,0.00583,0.00583,0.00583]},
+    {"t":0.23501, "x":6.39239, "y":4.17515, "heading":3.13402, "vx":-4.5981, "vy":0.13413, "omega":0.00028, "ax":0.00032, "ay":0.00035, "alpha":0.00007, "fx":[0.00563,0.00563,0.00524,0.00524], "fy":[0.00569,0.00608,0.00609,0.00569]},
+    {"t":0.28201, "x":6.17627, "y":4.18145, "heading":3.13404, "vx":-4.59808, "vy":0.13414, "omega":0.00028, "ax":41.04854, "ay":-1.19732, "alpha":3.40796, "fx":[702.30682,702.91563,694.15429,693.51891], "fy":[-33.9123,-6.47478,-6.44082,-34.63656]},
+    {"t":0.32902, "x":6.00549, "y":4.18644, "heading":3.13405, "vx":-2.66871, "vy":0.07787, "omega":0.16046, "ax":56.7785, "ay":-1.65664, "alpha":-3.41393, "fx":[966.29414,965.19284,965.31294,966.34413], "fy":[-9.94293,-47.2034,-45.72483,-9.84476]},
+    {"t":0.37602, "x":5.94278, "y":4.18827, "heading":3.14159, "vx":0.0, "vy":0.0, "omega":0.0, "ax":0.0, "ay":0.0, "alpha":0.0, "fx":[0.0,0.0,0.0,0.0], "fy":[0.0,0.0,0.0,0.0]}],
+  "splits":[0]
+ },
+ "events":[]
+}

@@ -2,6 +2,7 @@ package frc.robot.commands.diagnostics;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Robot;
+import frc.robot.RobotContainer;
 
 public class RunTests extends Command {
 	public static abstract class Test {
@@ -15,13 +16,13 @@ public class RunTests extends Command {
 
 		public void pass(final String msg) {
 			this.end(true);
-			Robot.cont.diag.chirp(true);
+			RobotContainer.getInstance().diag.chirp(true);
 			System.out.println("[DIAGNOSTICS] '" + this.name() + "' PASS: " + msg);
 		}
 
 		public void fail(final String msg) {
 			this.end(false);
-			Robot.cont.diag.chirp(false);
+			RobotContainer.getInstance().diag.chirp(false);
 			System.out.println("[DIAGNOSTICS] '" + this.name() + "' PASS: " + msg);
 		}
 	}

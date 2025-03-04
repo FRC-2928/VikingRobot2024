@@ -2,10 +2,15 @@ package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj.SerialPort;
 import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.subsystems.LimelightFX.*;
-import frc.robot.subsystems.LimelightFX.Behavior.*;
-import frc.robot.subsystems.LimelightFX.Module.*;
+import frc.robot.subsystems.LimelightFX.Behavior;
+import frc.robot.subsystems.LimelightFX.Behavior.Blink;
+import frc.robot.subsystems.LimelightFX.Behavior.Chevrons;
+import frc.robot.subsystems.LimelightFX.Behavior.Image;
+import frc.robot.subsystems.LimelightFX.Behavior.SolidColor;
+import frc.robot.subsystems.LimelightFX.Color;
+import frc.robot.subsystems.LimelightFX.Module.Geometry;
+import frc.robot.subsystems.LimelightFX.Module.Rotation;
+import frc.robot.subsystems.LimelightFX.SystemSound;
 
 public class LimelightFXManager {
 	public final LimelightFX fx = new LimelightFX();
@@ -31,7 +36,7 @@ public class LimelightFXManager {
 	public final Behavior<?> behTeleop = this.fx.behavior(Image.class).of("teleop");
 	public final Behavior<?> behHoldingNote = this.fx
 		.behavior(SolidColor.class)
-		.cfg(beh -> beh.color.set(Constants.LimelightFX.Colors.note))
+		.cfg(beh -> beh.color.set(Color.ORANGE))
 		.on(this.grid, 0)
 		.on(this.strips, 0);
 
@@ -40,7 +45,7 @@ public class LimelightFXManager {
 		.cfg(beh -> beh.filepath.set("dropnote"))
 		.on(this.grid, 1)
 		.fuse(this.fx.behavior(Chevrons.class).cfg(beh -> {
-			beh.colorA.set(Constants.LimelightFX.Colors.note);
+			beh.colorA.set(Color.ORANGE);
 			beh.colorB.set(Color.black);
 			beh.widthA.set(2);
 			beh.widthB.set(2);
@@ -49,12 +54,6 @@ public class LimelightFXManager {
 	@SuppressWarnings({ "resource" })
 	public LimelightFXManager() {
 		if(!Constants.LimelightFX.enabled) return;
-
-		this.fx.selector(() -> {
-			if(Robot.cont.shooter.inputs.holdingNote) return this.behHoldingNote;
-			else if(Robot.cont.ledState) return this.behHoldingNote;
-			else return null;
-		});
 
 		this.fx.initialize(() -> {
 			final SerialPort serial = new SerialPort(115200, SerialPort.Port.kUSB1);

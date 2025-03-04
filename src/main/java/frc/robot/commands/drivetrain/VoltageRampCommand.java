@@ -1,12 +1,12 @@
 package frc.robot.commands.drivetrain;
 
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import frc.robot.Robot;
+import frc.robot.RobotContainer;
 import edu.wpi.first.wpilibj2.command.Command;
 
 public class VoltageRampCommand extends Command {
 	public VoltageRampCommand() {
-		this.addRequirements(Robot.cont.drivetrain);
+		this.addRequirements(RobotContainer.getInstance().drivetrain);
 		VoltageRampCommand.voltage = 0;
 	}
 
@@ -17,7 +17,7 @@ public class VoltageRampCommand extends Command {
 
 	@Override
 	public void execute() {
-		Robot.cont.drivetrain.runCharacterization(VoltageRampCommand.voltage);
+		RobotContainer.getInstance().drivetrain.runCharacterization(VoltageRampCommand.voltage);
 		VoltageRampCommand.voltage += 0.005;
 	}
 
@@ -25,6 +25,6 @@ public class VoltageRampCommand extends Command {
 	public boolean isFinished() { return VoltageRampCommand.voltage > 0.5; }
 
 	@Override
-	public void end(final boolean interrupted) { Robot.cont.drivetrain.halt(); }
+	public void end(final boolean interrupted) { RobotContainer.getInstance().drivetrain.halt(); }
 
 }

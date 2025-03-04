@@ -32,6 +32,7 @@ public final class LimelightFX extends SubsystemBase {
 		public static final Color RED = new Color(1, 0, 0);
 		public static final Color GREEN = new Color(0, 1, 0);
 		public static final Color BLUE = new Color(0, 0, 1);
+		public static final Color ORANGE = new Color(1, 0.4, 0);
 
 		public final double a;
 		public final double r;

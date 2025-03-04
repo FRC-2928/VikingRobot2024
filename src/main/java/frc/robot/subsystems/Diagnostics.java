@@ -7,42 +7,32 @@ import java.util.ArrayList;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.RobotController.RadioLEDState;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.Constants;
 import frc.robot.Robot;
+import frc.robot.RobotContainer;
 import frc.robot.utils.Alert;
 
 public class Diagnostics extends SubsystemBase {
 	public final class Release extends Command {
-		public Release() { this.addRequirements(Robot.cont.drivetrain, Robot.cont.shooter, Robot.cont.climber); }
+		public Release() { this.addRequirements(RobotContainer.getInstance().drivetrain); }
 
 		@Override
 		public void initialize() {
-			for(final SwerveModule module : Robot.cont.drivetrain.modules) {
+			for(final SwerveModule module : RobotContainer.getInstance().drivetrain.modules) {
 				final ModuleIOReal io = (ModuleIOReal) module.io;
 				io.azimuth.setNeutralMode(NeutralModeValue.Coast);
 				io.drive.setNeutralMode(NeutralModeValue.Coast);
 			}
-
-			((ShooterIOReal) Robot.cont.shooter.io).pivot.setNeutralMode(NeutralModeValue.Coast);
-			final ClimberIOReal climber = ((ClimberIOReal) Robot.cont.climber.io);
-			climber.actuator.setNeutralMode(NeutralModeValue.Coast);
-			//climber.lock.set(0);
 
 			Diagnostics.this.chirp(1000, 100);
 			Diagnostics.this.chirp(800, 500);
@@ -50,16 +40,11 @@ public class Diagnostics extends SubsystemBase {
 
 		@Override
 		public void end(final boolean interrupted) {
-			for(final SwerveModule module : Robot.cont.drivetrain.modules) {
+			for(final SwerveModule module : RobotContainer.getInstance().drivetrain.modules) {
 				final ModuleIOReal io = (ModuleIOReal) module.io;
 				io.azimuth.setNeutralMode(NeutralModeValue.Brake);
 				io.drive.setNeutralMode(NeutralModeValue.Brake);
 			}
-
-			((ShooterIOReal) Robot.cont.shooter.io).pivot.setNeutralMode(NeutralModeValue.Brake);
-			final ClimberIOReal climber = ((ClimberIOReal) Robot.cont.climber.io);
-			climber.actuator.setNeutralMode(NeutralModeValue.Brake);
-			//climber.lock.set(0);
 
 			Diagnostics.this.chirp(800, 100);
 			Diagnostics.this.chirp(1000, 500);
@@ -79,7 +64,7 @@ public class Diagnostics extends SubsystemBase {
 		public int ms;
 		public long start = 0;
 
-		public void play() { Robot.cont.fxm.fx.sound(LimelightFX.WaveForm.Square, this.freq, this.ms, 0, 1); }
+		// public void play() { RobotContainer.getInstance().fxm.fx.sound(LimelightFX.WaveForm.Square, this.freq, this.ms, 0, 1); }
 	}
 
 	private static final byte suffixRadio = 1;
@@ -115,19 +100,6 @@ public class Diagnostics extends SubsystemBase {
 		SmartDashboard
 			.putData("Diagnostics/C-Stop", new InstantCommand(() -> CommandScheduler.getInstance().cancelAll()));
 
-		SmartDashboard.putData("Diagnostics/ZeroPivot", new InstantCommand(() -> {
-			if(!DriverStation.isTestEnabled()) {
-				System.out.println("Diagnostics: Cannot execute command ZeroPivot outside of Test mode");
-				return;
-			}
-			System.out
-				.println("Diagnostics: Pivot zeroed (was " + Robot.cont.shooter.inputs.angle.in(Units.Degrees) + ")");
-			final CANcoder enc = ((ShooterIOReal) Robot.cont.shooter.io).encoder;
-			final CANcoderConfiguration cfg = new CANcoderConfiguration();
-			enc.getConfigurator().refresh(cfg);
-			cfg.MagnetSensor.MagnetOffset = 0;
-			enc.getConfigurator().apply(cfg);
-		}));
 	}
 
 	@Override
@@ -135,8 +107,8 @@ public class Diagnostics extends SubsystemBase {
 		if(this.chirps.size() > 0) {
 			final Chirp chirp = this.chirps.get(0);
 			if(chirp.start == 0) {
-				chirp.start = Logger.getRealTimestamp();
-				chirp.play();
+				chirp.start = Logger.getTimestamp();
+				// chirp.play();
 			}
 
 			if(Logger.getRealTimestamp() - chirp.start >= chirp.ms) this.chirps.remove(0);
@@ -187,27 +159,17 @@ public class Diagnostics extends SubsystemBase {
 
 			String name;
 			try {
-				name = (String) this.loggedDashboardChooserSelectedValue.get(Robot.cont.autonomousChooser);
+				name = (String) this.loggedDashboardChooserSelectedValue.get(RobotContainer.getInstance().autoChooser);
 				if(name == null) name = "<none>";
 				invalidAutoRoutine = !name.contains("[comp]");
 			} catch(final Exception e) {
 				throw new Error(e);
 			}
 
-			final double startingConfigurationAngleDifference = Math
-				.abs(Robot.cont.shooter.inputs.angle.minus(Constants.Shooter.startingConfiguration).in(Units.Degrees));
-			final boolean shooterAngle = startingConfigurationAngleDifference > 6;
-			final boolean notePossession = !Robot.cont.shooter.inputs.holdingNote;
 			final boolean badVoltage = RobotController.getBatteryVoltage() < 12;
 
 			alertInvalidAutoRoutine.text = "Autonomous routine '" + name + "' not ready for competition!";
 			alertInvalidAutoRoutine.active = invalidAutoRoutine;
-			alertShooterAngle.text = "Not in starting configuration ("
-				+ startingConfigurationAngleDifference
-				+ "deg off)";
-			alertShooterAngle.active = shooterAngle;
-			alertNotePossession.active = notePossession;
-			alertClimberHome.active = Robot.cont.climber.inputs.home;
 			alertBadVoltage.text = "Battery Voltage is "
 				+ RobotController.getBatteryVoltage()
 				+ "V, recommended to be at least 12V";
