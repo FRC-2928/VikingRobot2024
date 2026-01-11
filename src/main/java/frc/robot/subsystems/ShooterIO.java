@@ -2,16 +2,18 @@ package frc.robot.subsystems;
 
 import org.littletonrobotics.junction.AutoLog;
 
-import edu.wpi.first.units.*;
+import edu.wpi.first.units.measure.*;
+
+import edu.wpi.first.units.Units;
 
 public interface ShooterIO {
 	@AutoLog
 	public static class ShooterIOInputs {
-		public Measure<Angle> angle = Units.Radians.zero();
-		public Measure<Velocity<Angle>> angleSpeed = Units.RadiansPerSecond.zero();
+		public Angle angle = Units.Radians.zero();
+		public AngularVelocity angleSpeed = Units.RadiansPerSecond.zero();
 		public boolean holdingNote;
-		public Measure<Velocity<Angle>> flywheelSpeedA;
-		public Measure<Velocity<Angle>> flywheelSpeedB;
+		public AngularVelocity flywheelSpeedA;
+		public AngularVelocity flywheelSpeedB;
 	}
 
 	public static enum Demand {
@@ -22,7 +24,7 @@ public interface ShooterIO {
 		public final double dir;
 	}
 
-	public default void rotate(final Measure<Angle> target) {}
+	public default void rotate(final Angle target) {}
 
 	public default void runFlywheels(final double demand) {}
 

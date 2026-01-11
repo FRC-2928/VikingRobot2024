@@ -14,6 +14,7 @@ import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
 import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
 import com.ctre.phoenix6.signals.ReverseLimitValue;
 
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Servo;
 import frc.robot.Constants;
 import frc.robot.utils.STalonFX;
@@ -51,7 +52,7 @@ public class ClimberIOReal implements ClimberIO {
 
 	public final Servo lock = new Servo(9);
 
-	public final StatusSignal<Double> position;
+	public final StatusSignal<Angle> position;
 	public final StatusSignal<ReverseLimitValue> home;
 
 	private boolean disengaging;
@@ -64,7 +65,7 @@ public class ClimberIOReal implements ClimberIO {
 
 	@Override
 	public void override(final double dutyCycle) {
-		this.actuator.setControl(new DutyCycleOut(dutyCycle, true, true, false, false));
+		this.actuator.setControl(new DutyCycleOut(dutyCycle));
 
 		this.demand = this.position.getValueAsDouble();
 	}

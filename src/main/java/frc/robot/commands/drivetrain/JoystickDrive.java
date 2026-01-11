@@ -8,7 +8,9 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.units.*;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.*;
+import edu.wpi.first.units.LinearVelocityUnit;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import frc.robot.Constants;
@@ -36,7 +38,7 @@ public class JoystickDrive extends Command {
 	public final Drivetrain drivetrain;
 	public final DriverOI oi = Robot.cont.driverOI;
 
-	public Measure<Angle> forTarget = Units.Radians.zero();
+	public Angle forTarget = Units.Radians.zero();
 	public double forMagnitude = 0.5;
 	private final ProfiledPIDController absoluteController = Constants.Drivetrain.absoluteRotationPID
 		.createProfiledController(Constants.Drivetrain.absoluteRotationConstraints);
@@ -66,13 +68,13 @@ public class JoystickDrive extends Command {
 		final double dy = Math.sin(direction.getRadians()) * magnitude;
 
 		// Convert to m/s
-		final Measure<Velocity<Distance>> vx = Constants.Drivetrain.maxVelocity.times(dx);
-		final Measure<Velocity<Distance>> vy = Constants.Drivetrain.maxVelocity.times(dy);
+		final LinearVelocity vx = Constants.Drivetrain.maxVelocity.times(dx);
+		final LinearVelocity vy = Constants.Drivetrain.maxVelocity.times(dy);
 
 		return new Translation2d(vx.in(Units.MetersPerSecond), vy.in(Units.MetersPerSecond));
 	}
 
-	private Measure<Velocity<Angle>> theta() {
+	private AngularVelocity theta() {
 		final double theta;
 
 		final String selectedDriveMode = Robot.cont.getDriveMode();

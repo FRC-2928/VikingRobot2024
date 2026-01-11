@@ -26,12 +26,12 @@ import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.signals.AbsoluteSensorRangeValue;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
-import edu.wpi.first.units.*;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.Constants;
 import frc.robot.Robot;
@@ -45,15 +45,15 @@ public class ModuleIOReal implements ModuleIO {
 	public final STalonFX azimuth;
 	public final CANcoder cancoder;
 
-	public final StatusSignal<Double> drivePosition;
-	public final StatusSignal<Double> driveVelocity;
-	public final StatusSignal<Double> driveCurrent;
+	public final StatusSignal<Angle> drivePosition;
+	public final StatusSignal<AngularVelocity> driveVelocity;
+	public final StatusSignal<Current> driveCurrent;
 
-	public final StatusSignal<Double> azimuthCurrent;
+	public final StatusSignal<Current> azimuthCurrent;
 
-	public final StatusSignal<Double> angle;
+	public final StatusSignal<Angle> angle;
 
-	public final Measure<Angle> absoluteEncoderOffset;
+	public final Angle absoluteEncoderOffset;
 
 	public ModuleIOReal(final SwerveModule module) {
 		this.place = module.place;
@@ -97,8 +97,8 @@ public class ModuleIOReal implements ModuleIO {
 		// Supply current limits
 		driveConfig.CurrentLimits.SupplyCurrentLimit = 35;
 		driveConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-		driveConfig.CurrentLimits.SupplyCurrentThreshold = 60;
-		driveConfig.CurrentLimits.SupplyTimeThreshold = 0.1;
+		driveConfig.CurrentLimits.SupplyCurrentLimit = 60;
+		driveConfig.CurrentLimits.SupplyCurrentLimit = 0.1;
 
 		driveConfig.Feedback.SensorToMechanismRatio =  Constants.Drivetrain.driveGearRatio/Constants.Drivetrain.wheelCircumference.in(Units.Meters);
 		driveConfig.OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.1;
@@ -122,8 +122,8 @@ public class ModuleIOReal implements ModuleIO {
 		// Supply current limits
 		azimuthConfig.CurrentLimits.SupplyCurrentLimit = 35;
 		azimuthConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-		azimuthConfig.CurrentLimits.SupplyCurrentThreshold = 60;
-		azimuthConfig.CurrentLimits.SupplyTimeThreshold = 0.1;
+		azimuthConfig.CurrentLimits.SupplyCurrentLimit = 60;
+		azimuthConfig.CurrentLimits.SupplyCurrentLimit = 0.1;
 
 		azimuthConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
 		azimuthConfig.Feedback.FeedbackRemoteSensorID = this.cancoder.getDeviceID();
@@ -171,22 +171,18 @@ public class ModuleIOReal implements ModuleIO {
 		this.drive
 			.setControl(
 				new VoltageOut(
-					volts,
-					Robot.cont.operatorOI.foc.getAsBoolean() || DriverStation.isAutonomous(),
-					true,
-					false,
-					false
+					volts
 				)
 			);
 	}
 
 	@Override
-	public void drive(final Measure<Velocity<Distance>> demand) {
+	public void drive(final LinearVelocity demand) {
 		this.drive.setControl(new VelocityVoltage(demand.in(Units.MetersPerSecond)));
 	}
 
 	@Override
-	public void azimuth(final Measure<Angle> desired) {
+	public void azimuth(final Angle desired) {
 		this.azimuth.setControl(new PositionVoltage(desired.in(Units.Rotations)));
 	}
 

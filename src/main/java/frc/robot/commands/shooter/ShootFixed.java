@@ -4,7 +4,7 @@ import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.units.Angle;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.Timer;
@@ -21,14 +21,14 @@ public class ShootFixed extends Command {
 		this(() -> Units.Degrees.of(Tuning.subAngle.get()), triggerFire, timeout);
 	}
 
-	public ShootFixed(final Supplier<Measure<Angle>> angle, final boolean triggerFire, final double timeout) {
+	public ShootFixed(final Supplier<Angle> angle, final boolean triggerFire, final double timeout) {
 		this.addRequirements(Robot.cont.shooter);
 		this.angle = angle;
 		this.triggerFire = triggerFire;
 		this.timeout = timeout;
 	}
 
-	public final Supplier<Measure<Angle>> angle;
+	public final Supplier<Angle> angle;
 	public final boolean triggerFire;
 	public final double timeout;
 
@@ -43,7 +43,7 @@ public class ShootFixed extends Command {
 
 	@Override
 	public void execute() {
-		final Measure<Angle> angle = this.angle.get();
+		final Angle angle = this.angle.get();
 		Robot.cont.shooter.io.runFlywheelsVelocity(Tuning.flywheelVelocity.get());
 		Robot.cont.shooter.io.rotate(angle);
 

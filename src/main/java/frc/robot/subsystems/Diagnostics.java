@@ -135,11 +135,11 @@ public class Diagnostics extends SubsystemBase {
 		if(this.chirps.size() > 0) {
 			final Chirp chirp = this.chirps.get(0);
 			if(chirp.start == 0) {
-				chirp.start = Logger.getRealTimestamp();
+				chirp.start = Logger.getTimestamp();
 				chirp.play();
 			}
 
-			if(Logger.getRealTimestamp() - chirp.start >= chirp.ms) this.chirps.remove(0);
+			if(Logger.getTimestamp() - chirp.start >= chirp.ms) this.chirps.remove(0);
 		}
 	}
 

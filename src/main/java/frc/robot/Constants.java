@@ -15,12 +15,14 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.units.Angle;
-import edu.wpi.first.units.Distance;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Unit;
 import edu.wpi.first.units.Units;
-import edu.wpi.first.units.Velocity;
+import edu.wpi.first.units.measure.Velocity;
 import frc.robot.subsystems.LimelightFX.Color;
 import frc.robot.Tuning;
 
@@ -35,8 +37,8 @@ public class Constants {
 
 	public static final Mode mode = Constants.currentMode();
 	public static final boolean real = Constants.mode == Constants.Mode.REAL;
-	public static final Measure<Distance> fieldWidth = Units.Meters.of(16.541); // Correlates to Field oriented x coordinate
-	public static final Measure<Distance> fieldDepth = Units.Meters.of(8.211); // Correlates to Field oriented y coordinate
+	public static final Distance fieldWidth = Units.Meters.of(16.541); // Correlates to Field oriented x coordinate
+	public static final Distance fieldDepth = Units.Meters.of(8.211); // Correlates to Field oriented y coordinate
 
 	public static final AudioConfigs talonFXAudio = new AudioConfigs()
 		.withAllowMusicDurDisable(true)
@@ -71,18 +73,18 @@ public class Constants {
 		}
 	}
 
-	public static PIDConstants fromPIDValues(final PIDValues pid) { return new PIDConstants(pid.p, pid.d, pid.d); }
+	public static PIDValues fromPIDValues(final PIDValues pid) { return new PIDValues(pid.p, pid.d, pid.d, 0); }
 
 	public static record Ratio<U extends Unit<U>>(double factor) {
-		public Ratio(final Measure<U> from, final Measure<U> to) {
+		public Ratio(final U from, final U to) {
 			this(to.baseUnitMagnitude() / from.baseUnitMagnitude());
 		}
 
 		public Ratio(final double from, final double to) { this(to / from); }
 
-		public final Measure<U> forward(final Measure<U> value) { return value.times(this.factor); }
+		public final U forward(final U value) { return value.(this.factor); }
 
-		public final Measure<U> inverse(final Measure<U> value) { return value.divide(this.factor); }
+		public final U inverse(final U value) { return value.divide(this.factor); }
 
 		public final Ratio<U> inverse() { return new Ratio<U>(1 / this.factor); }
 	}
@@ -188,25 +190,25 @@ public class Constants {
 
 		public static final double thetaCompensationFactor = 0.2;
 
-		public static final Measure<Distance> wheelBase = Units.Inches.of(29 - 2.5 * 2);
-		public static final Measure<Distance> trackWidth = Drivetrain.wheelBase; // For a square drivetrain`
+		public static final Distance wheelBase = Units.Inches.of(29 - 2.5 * 2);
+		public static final Distance trackWidth = Drivetrain.wheelBase; // For a square drivetrain`
 
-		public static final Measure<Angle> swerveFrontLeftOffset = Units.Rotations.of(-0.420654296875);
+		public static final Angle swerveFrontLeftOffset = Units.Rotations.of(-0.420654296875);
 		public static final Translation2d swerveFrontLeftTranslation = new Translation2d(
 			Constants.Drivetrain.wheelBase,
 			Constants.Drivetrain.trackWidth
 		);
-		public static final Measure<Angle> swerveFrontRightOffset = Units.Rotations.of(0.299072265625);
+		public static final Angle swerveFrontRightOffset = Units.Rotations.of(0.299072265625);
 		public static final Translation2d swerveFrontRightTranslation = new Translation2d(
 			Constants.Drivetrain.wheelBase,
 			Constants.Drivetrain.trackWidth.negate()
 		);
-		public static final Measure<Angle> swerveBackLeftOffset = Units.Rotations.of(0.033203125);
+		public static final Angle swerveBackLeftOffset = Units.Rotations.of(0.033203125);
 		public static final Translation2d swerveBackLeftTranslation = new Translation2d(
 			Constants.Drivetrain.wheelBase.negate(),
 			Constants.Drivetrain.trackWidth
 		);
-		public static final Measure<Angle> swerveBackRightOffset = Units.Rotations.of(-0.4169921875);
+		public static final Angle swerveBackRightOffset = Units.Rotations.of(-0.4169921875);
 		public static final Translation2d swerveBackRightTranslation = new Translation2d(
 			Constants.Drivetrain.wheelBase.negate(),
 			Constants.Drivetrain.trackWidth.negate()
@@ -223,13 +225,13 @@ public class Constants {
 		public static final double driveGearRatio = (50.0 / 14.0) * (17.0 / 27.0) * (45.0 / 15.0); // ~= 6.746
 		public static final double azimuthGearRatio = 150.0 / 7.0;
 
-		public static final Measure<Distance> wheelRadius = Units.Inches.of(2);
-		public static final Measure<Distance> wheelCircumference = Drivetrain.wheelRadius.times(2 * Math.PI);
+		public static final Distance wheelRadius = Units.Inches.of(2);
+		public static final Distance wheelCircumference = Drivetrain.wheelRadius.times(2 * Math.PI);
 
-		public static final Measure<Velocity<Distance>> maxVelocity = Units.Meters.per(Units.Second).of(5.0);
+		public static final LinearVelocity maxVelocity = Units.Meters.per(Units.Second).of(5.0);
 
 		// max angular velocity computes to 6.41 radians per second
-		public static final Measure<Velocity<Angle>> maxAngularVelocity = Units.RotationsPerSecond
+		public static final AngularVelocity maxAngularVelocity = Units.RotationsPerSecond
 			.of(
 				Drivetrain.maxVelocity.in(Units.MetersPerSecond)
 					/ (2
@@ -256,8 +258,8 @@ public class Constants {
 			);
 
 			public FlywheelConfiguration(
-				final Measure<Velocity<Angle>> flywheelVelocity,
-				final Measure<Velocity<Angle>> flywheelVelocityThreshold,
+				final AngularVelocity flywheelVelocity,
+				final AngularVelocity flywheelVelocityThreshold,
 				final double ampPower
 			) {
 				this.speakerVelocity = flywheelVelocity;
@@ -265,8 +267,8 @@ public class Constants {
 				this.ampPower = ampPower;
 			}
 
-			public final Measure<Velocity<Angle>> speakerVelocity;
-			public final Measure<Velocity<Angle>> speakerVelocityThreshold;
+			public final AngularVelocity speakerVelocity;
+			public final AngularVelocity speakerVelocityThreshold;
 
 			public final double ampPower;
 		}
@@ -281,7 +283,7 @@ public class Constants {
 			.withKD(0.05);
 
 		public static final double pivotCurrentLimit = 40;
-		public static final Measure<Velocity<Angle>> pivotMaxVelocityShoot = Units.DegreesPerSecond.of(2);
+		public static final AngularVelocity pivotMaxVelocityShoot = Units.DegreesPerSecond.of(2);
 		public static final Slot0Configs flywheelGainsSlot0 = new Slot0Configs()
 			.withKP(0.05)
 			.withKI(0.0)
@@ -297,28 +299,28 @@ public class Constants {
 		// todo: fill angles
 
 		// a little above intake height to avoid hitting floor but to be ready
-		public static final Measure<Angle> readyIntake = Units.Rotations.of(-0.1085);
+		public static final Angle readyIntake = Units.Rotations.of(-0.1085);
 		// min angle before hitting floor
-		public static final Measure<Angle> intakeGround = Units.Rotations.of(-0.1085);
+		public static final Angle intakeGround = Units.Rotations.of(-0.1085);
 
-		public static final Measure<Angle> readyDrive = Units.Degrees.zero();
-		public static final Measure<Angle> readyShootFront = Units.Rotations.of(0.122);
-		public static final Measure<Angle> readyShootRear = Units.Degrees.of(125);
-		// public static final Measure<Angle> readyShootRearSub = Units.Degrees.of(105);
-		public static final Measure<Angle> shootAmp = Units.Degrees.of(110);
+		public static final Angle readyDrive = Units.Degrees.zero();
+		public static final Angle readyShootFront = Units.Rotations.of(0.122);
+		public static final Angle readyShootRear = Units.Degrees.of(125);
+		// public static final Angle readyShootRearSub = Units.Degrees.of(105);
+		public static final Angle shootAmp = Units.Degrees.of(110);
 
 		public static final double ampBarServoAExtend = 1.0;
 		public static final double ampBarServoBExtend = 0.0;
 		public static final double ampBarServoARetract = 0.0;
 		public static final double ampBarServoBRetract = 1.0;
 
-		public static final Measure<Angle> startingConfiguration = Units.Degrees.of(90);
+		public static final Angle startingConfiguration = Units.Degrees.of(90);
 
-		public static final Measure<Angle> shootSub = Units.Degrees.of(115);
-		public static final Measure<Angle> shootFerry = Units.Degrees.of(130);
+		public static final Angle shootSub = Units.Degrees.of(115);
+		public static final Angle shootFerry = Units.Degrees.of(130);
 
 		// max angle before exiting allowed extension range
-		public static final Measure<Angle> max = Units.Rotations.of(0.39);
+		public static final Angle max = Units.Rotations.of(0.39);
 
 		public static final double fireTimeout = 0.3;
 	}

@@ -9,25 +9,26 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.Angle;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.Measure; 
 import edu.wpi.first.units.Units;
-import edu.wpi.first.units.Velocity;
+import edu.wpi.first.units.measure.Velocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.Robot;
 
 public class LookForNote extends Command {
   /** Creates a new lookForNote. */
-  public LookForNote(Measure<Angle> rotAmount) { 
+  public LookForNote(Angle rotAmount) { 
     this.addRequirements(Robot.cont.drivetrain); 
     this.rotationAmount = rotAmount;
   }
 
-  private Measure<Angle> initalAngle;
-  private Measure<Angle> currentAngle;
-  private final Measure<Angle> rotationAmount;
-  private Measure<Angle> setpoint;
+  private Angle initalAngle;
+  private Angle currentAngle;
+  private final Angle rotationAmount;
+  private Angle setpoint;
   private double computedPidValue;
   private final ProfiledPIDController absoluteController = Constants.Drivetrain.absoluteRotationPID
 		.createProfiledController(Constants.Drivetrain.absoluteRotationConstraints);
@@ -47,7 +48,7 @@ public class LookForNote extends Command {
     this.currentAngle = Units.Rotations.of(Robot.cont.drivetrain.est.getEstimatedPosition().getRotation().getRotations()); 
     double measurement = this.currentAngle.in(Units.Rotations);
     this.computedPidValue = -this.absoluteController.calculate(measurement,this.setpoint.in(Units.Rotations));
-    Measure<Velocity<Angle>> rotationSpeed = Constants.Drivetrain.maxAngularVelocity.times( MathUtil.applyDeadband(this.computedPidValue,0.008));
+    AngularVelocity rotationSpeed = Constants.Drivetrain.maxAngularVelocity.times( MathUtil.applyDeadband(this.computedPidValue,0.008));
     Robot.cont.drivetrain
       .control(
         Robot.cont.drivetrain

@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
-import edu.wpi.first.units.*;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.*;
 import java.util.Arrays;
 
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -8,6 +9,7 @@ import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathfindingCommand;
+import com.pathplanner.lib.controllers.PathFollowingController;
 import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import com.pathplanner.lib.util.ReplanningConfig;
@@ -97,12 +99,12 @@ public class Drivetrain extends SubsystemBase {
 
 		// PathPlannerLib auto configuration. Refer https://pathplanner.dev/pplib-getting-started.html
 		AutoBuilder
-			.configureHolonomic(
+			.configure(
 				this::blueOriginPose,
 				null,
 				this::getCurrentChassisSpeeds,
 				this::controlRobotOriented,
-				new HolonomicPathFollowerConfig(
+				new PathFollowingController(
 					Constants.fromPIDValues(Constants.Drivetrain.Auto.translationDynamic),
 					Constants.fromPIDValues(Constants.Drivetrain.Auto.thetaDynamic),
 					Constants.Drivetrain.maxVelocity.in(Units.MetersPerSecond),

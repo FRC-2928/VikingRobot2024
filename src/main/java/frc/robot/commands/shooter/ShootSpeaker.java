@@ -6,7 +6,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.Angle;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.Timer;
@@ -30,7 +30,7 @@ public class ShootSpeaker extends Command {
 		this(triggerFire, Constants.Shooter.readyShootRear, timeout);
 	}
 
-	public ShootSpeaker(final boolean triggerFire, final Measure<Angle> startAngle, final double timeout) {
+	public ShootSpeaker(final boolean triggerFire, final Angle startAngle, final double timeout) {
 		this.addRequirements(Robot.cont.shooter);
 		this.triggerFire = triggerFire;
 		this.rearAngle = startAngle;
@@ -38,7 +38,7 @@ public class ShootSpeaker extends Command {
 	}
 
 	public final boolean triggerFire;
-	public final Measure<Angle> rearAngle;
+	public final Angle rearAngle;
 	public final double timeout;
 
 	private double fired;
@@ -98,8 +98,8 @@ public class ShootSpeaker extends Command {
 			}
 
 			if(shooterLLSees) {
-				final Measure<Angle> po = Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset();
-				final Measure<Angle> yo = Robot.cont.drivetrain.limelightShooter
+				final Angle po = Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset();
+				final Angle yo = Robot.cont.drivetrain.limelightShooter
 					.getTargetVerticalOffset()
 					.times(forward ? 1 : -1);
 

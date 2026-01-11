@@ -19,7 +19,8 @@ import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.units.*;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog.State;
@@ -62,7 +63,7 @@ public class ShooterIOReal implements ShooterIO {
 
 		this.pivot.getConfigurator().apply(pivot);
 		this.pivot.setNeutralMode(NeutralModeValue.Brake);
-		this.pivot.setInverted(false);
+		// this.pivot.setInverted(false);
 
 		final TalonFXConfiguration flywheels = new TalonFXConfiguration();
 		flywheels.Slot0 = Constants.Shooter.flywheelGainsSlot0;
@@ -70,11 +71,11 @@ public class ShooterIOReal implements ShooterIO {
 
 		this.flywheelA.getConfigurator().apply(flywheels);
 		this.flywheelA.setNeutralMode(NeutralModeValue.Coast);
-		this.flywheelA.setInverted(false);
+		// this.flywheelA.setInverted(false);
 
 		this.flywheelB.getConfigurator().apply(flywheels);
 		this.flywheelB.setNeutralMode(NeutralModeValue.Coast);
-		this.flywheelB.setInverted(true);
+		// this.flywheelB.setInverted(true);
 		//this.flywheelB.setControl(new Follower(this.flywheelA.getDeviceID(), true));
 
 		this.feeder.setNeutralMode(NeutralMode.Brake);
@@ -168,17 +169,17 @@ public class ShooterIOReal implements ShooterIO {
 	private final Servo ampServoA = new Servo(Constants.PWM.ampBarServoA);
 	private final Servo ampServoB = new Servo(Constants.PWM.ampBarServoB);
 
-	public final StatusSignal<Double> angle;
-	public final StatusSignal<Double> angleSpeed;
-	public final StatusSignal<Double> velocityA;
-	public final StatusSignal<Double> velocityB;
+	public final StatusSignal<Angle> angle;
+	public final StatusSignal<AngularVelocity> angleSpeed;
+	public final StatusSignal<AngularVelocity> velocityA;
+	public final StatusSignal<AngularVelocity> velocityB;
 	public final SensorCollection sensors;
 
 	public final SysIdRoutine sysIdPivot;
 
 	@Override
-	public void rotate(final Measure<Angle> target) {
-		final Measure<Angle> rot = Units.Radians
+	public void rotate(final Angle target) {
+		final Angle rot = Units.Radians
 			.of(
 				MathUtil
 					.clamp(

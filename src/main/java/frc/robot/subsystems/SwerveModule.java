@@ -8,7 +8,8 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.units.*;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.*;
 import frc.robot.Constants;
 
 public class SwerveModule {
@@ -42,7 +43,7 @@ public class SwerveModule {
 	public SwerveModuleState current = new SwerveModuleState();
 	public SwerveModuleState desired = new SwerveModuleState();
 
-	public Measure<Distance> drivePosition() {
+	public Distance drivePosition() {
 		return Units.Meters
 			.of(
 				this.inputs.drivePosition.in(Units.Rotations) * Constants.Drivetrain.wheelCircumference.in(Units.Meters)
@@ -51,9 +52,9 @@ public class SwerveModule {
 
 	public void halt() { this.io.setDriveVoltage(0); }
 
-	private void azimuth(final Measure<Angle> desired) { this.io.azimuth(desired); }
+	private void azimuth(final Angle desired) { this.io.azimuth(desired); }
 
-	private void drive(final Measure<Velocity<Distance>> speed) {
+	private void drive(final LinearVelocity speed) {
 		/*
 		// Calculate drive power
 		final double ffw = this.driveFFW.calculate(speed.in(Units.MetersPerSecond));

@@ -18,14 +18,16 @@ import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.hardware.Pigeon2;
-import edu.wpi.first.units.*;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import frc.robot.Constants;
 
 /** IO implementation for Pigeon2 */
 public class GyroIOReal implements GyroIO {
 	private final Pigeon2 pigeon = new Pigeon2(Constants.CAN.CTRE.pigeon, Constants.CAN.CTRE.bus);
-	private final StatusSignal<Double> yaw = this.pigeon.getYaw();
-	private final StatusSignal<Double> yawVelocity = this.pigeon.getAngularVelocityZWorld();
+	private final StatusSignal<Angle> yaw = this.pigeon.getYaw();
+	private final StatusSignal<AngularVelocity> yawVelocity = this.pigeon.getAngularVelocityZWorld();
 
 	public GyroIOReal() {
 		this.pigeon.getConfigurator().apply(new Pigeon2Configuration());

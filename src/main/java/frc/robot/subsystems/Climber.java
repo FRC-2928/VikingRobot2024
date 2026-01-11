@@ -14,7 +14,7 @@ public class Climber extends SubsystemBase {
 	}
 
 	public final ClimberIO io;
-	public final ClimberIOInputsAutoLogged inputs = new ClimberIOInputsAutoLogged();
+	public final ClimberIO inputs = new ClimberIO(){};
 
 	@Override
 	public void periodic() {

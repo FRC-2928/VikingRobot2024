@@ -13,26 +13,27 @@
 
 package frc.robot.subsystems;
 
-import edu.wpi.first.units.*;
+import edu.wpi.first.units.measure.*;
+import edu.wpi.first.units.Units;
 
 import org.littletonrobotics.junction.AutoLog;
 
 public interface ModuleIO {
 	@AutoLog
 	public static class ModuleIOInputs {
-		public Measure<Angle> drivePosition = Units.Degrees.zero();
-		public Measure<Velocity<Distance>> driveVelocity = Units.MetersPerSecond.zero();
-		public Measure<Current> driveCurrent = Units.Amps.zero();
+		public Angle drivePosition = Units.Degrees.zero();
+		public LinearVelocity driveVelocity = Units.MetersPerSecond.zero();
+		public Current driveCurrent = Units.Amps.zero();
 
-		public Measure<Angle> angle = Units.Degrees.zero();
-		public Measure<Current> azimuthCurrent = Units.Amps.zero();
+		public Angle angle = Units.Degrees.zero();
+		public Current azimuthCurrent = Units.Amps.zero();
 	}
 
 	public default void setDriveVoltage(final double volts) {}
 
-	public default void drive(final Measure<Velocity<Distance>> desired) {}
+	public default void drive(final LinearVelocity desired) {}
 
-	public default void azimuth(final Measure<Angle> desired) {}
+	public default void azimuth(final Angle desired) {}
 
 	public default void updateInputs(final ModuleIOInputs inputs) {}
 }
