@@ -11,6 +11,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.*;
 import frc.robot.Constants;
+import frc.robot.subsystems.ModuleIO.ModuleIOInputs;
 
 public class SwerveModule {
 	public static enum Place {
@@ -34,7 +35,7 @@ public class SwerveModule {
 
 	public final Place place;
 	public final ModuleIO io;
-	public final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
+	public final ModuleIOInputs inputs = new ModuleIOInputs();
 
 	private final SimpleMotorFeedforward driveFFW = Constants.Drivetrain.driveFFW;
 	private final PIDController drivePID = Constants.Drivetrain.drivePID.createController();
@@ -89,7 +90,7 @@ public class SwerveModule {
 
 	public void periodic() {
 		this.io.updateInputs(this.inputs);
-		Logger.processInputs("Drivetrain/" + this.place.name(), this.inputs);
+		//Logger.processInputs("Drivetrain/" + this.place.name(), this.inputs);
 
 		this.position = new SwerveModulePosition(
 			this.drivePosition().in(Units.Meters),

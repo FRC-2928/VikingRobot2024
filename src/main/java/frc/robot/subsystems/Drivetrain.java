@@ -9,10 +9,13 @@ import org.littletonrobotics.junction.Logger;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathfindingCommand;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.controllers.PathFollowingController;
-import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.util.DriveFeedforwards;
+//import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PathPlannerLogging;
-import com.pathplanner.lib.util.ReplanningConfig;
+//import com.pathplanner.lib.util.ReplanningConfig;
 
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -27,6 +30,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.commands.drivetrain.JoystickDrive;
+import frc.robot.subsystems.GyroIO.GyroIOInputs;
 import frc.robot.subsystems.SwerveModule.Place;
 import frc.robot.vision.Limelight;
 
@@ -63,7 +67,7 @@ public class Drivetrain extends SubsystemBase {
 	}
 
 	public final GyroIO gyro;
-	public final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
+	public final GyroIOInputs gyroInputs = new GyroIOInputs();
 
 	public final SwerveModule[] modules = new SwerveModule[4]; // FL, FR, BL, BR
 
@@ -103,19 +107,13 @@ public class Drivetrain extends SubsystemBase {
 				this::blueOriginPose,
 				null,
 				this::getCurrentChassisSpeeds,
-				this::controlRobotOriented,
-				new PathFollowingController(
+				this::controlRobotOrientedPathplanner,
+				new PPHolonomicDriveController(
 					Constants.fromPIDValues(Constants.Drivetrain.Auto.translationDynamic),
 					Constants.fromPIDValues(Constants.Drivetrain.Auto.thetaDynamic),
-					Constants.Drivetrain.maxVelocity.in(Units.MetersPerSecond),
-					Math
-						.hypot(
-							Constants.Drivetrain.trackWidth.in(Units.Meters) / 2,
-							Constants.Drivetrain.wheelBase.in(Units.Meters) / 2
-						),
-					new ReplanningConfig(true, false, 0.1, 0.0)
-					//new ReplanningConfig(false, false)
+					0.02
 				),
+				Constants.Drivetrain.Auto.config,
 				() -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
 				this
 			);
@@ -161,6 +159,10 @@ public class Drivetrain extends SubsystemBase {
 
 		for(int i = 0; i < this.modules.length; i++)
 			this.modules[i].control(states[i]);
+	}
+
+	public void controlRobotOrientedPathplanner(final ChassisSpeeds speeds, final DriveFeedforwards ffs) {
+		controlRobotOriented(speeds);
 	}
 
 	public void halt() { this.control(State.locked()); }
@@ -234,7 +236,7 @@ public class Drivetrain extends SubsystemBase {
 	@Override
 	public void periodic() {
 		this.gyro.updateInputs(this.gyroInputs);
-		Logger.processInputs("Drivetrain/Gyro", this.gyroInputs);
+		//Logger.processInputs("Drivetrain/Gyro", this.gyroInputs);
 
 		this.joystickSpeeds = this.joystickDrive.speeds();
 		if(this.getCurrentCommand() == this.joystickDrive) this.control(this.joystickSpeeds);

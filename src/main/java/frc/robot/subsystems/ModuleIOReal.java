@@ -13,8 +13,6 @@
 
 package frc.robot.subsystems;
 
-import org.littletonrobotics.junction.AutoLog;
-import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.BaseStatusSignal;
@@ -141,7 +139,7 @@ public class ModuleIOReal implements ModuleIO {
 		if(this.place == Place.FrontRight || this.place == Place.BackRight) this.drive.setInverted(true);
 
 		final CANcoderConfiguration encoderConfig = new CANcoderConfiguration();
-		encoderConfig.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
+		//encoderConfig.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
 		encoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
 		encoderConfig.MagnetSensor.MagnetOffset = this.absoluteEncoderOffset.in(Units.Rotations);
 		this.cancoder.getConfigurator().apply(encoderConfig);

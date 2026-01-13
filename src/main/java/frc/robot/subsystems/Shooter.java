@@ -4,6 +4,7 @@ import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.subsystems.ShooterIO.ShooterIOInputs;
 
 public class Shooter extends SubsystemBase {
 	public Shooter() {
@@ -14,11 +15,11 @@ public class Shooter extends SubsystemBase {
 	}
 
 	public final ShooterIO io;
-	public final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
+	public final ShooterIOInputs inputs = new ShooterIOInputs();
 
 	@Override
 	public void periodic() {
 		this.io.updateInputs(this.inputs);
-		Logger.processInputs("Shooter", this.inputs);
+		//Logger.processInputs("Shooter", this.inputs);
 	}
 }

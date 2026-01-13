@@ -1,8 +1,17 @@
 package frc.robot;
 
+import java.io.IOException;
+import org.json.simple.parser.ParseException;
+import java.util.Optional;
+
 import org.littletonrobotics.junction.Logger;
 
-import com.choreo.lib.*;
+//import choreo.*;
+import choreo.trajectory.Trajectory;
+import choreo.trajectory.SwerveSample;
+import choreo.Choreo;
+import choreo.auto.AutoChooser;
+import choreo.auto.AutoFactory;
 import com.pathplanner.lib.auto.*;
 import com.pathplanner.lib.path.*;
 
@@ -288,9 +297,17 @@ public final class Autonomous {
 		return chooser;
 	}
 
+	public static Pose2d getTrajStartPose2d(Optional<? extends Trajectory<?>> traj) {
+		Pose2d startingPose = new Pose2d();
+		if (traj.isPresent()) {
+			startingPose = traj.get().getInitialPose(true).orElse(new Pose2d());
+		}
+		return startingPose;
+	}
+
 	public static Command setInitialPose(final String name) {
-		final ChoreoTrajectory traj = Choreo.getTrajectory(name);
-		final Pose2d initial = traj.getInitialPose();
+		//final Trajectory traj = Choreo.loadTrajectory(name);
+		final Pose2d initial = getTrajStartPose2d(Choreo.loadTrajectory(name));
 
 		return Commands.runOnce(() -> {
 			Robot.cont.drivetrain.reset(Autonomous.getPoseForAlliance(initial));
@@ -302,20 +319,30 @@ public final class Autonomous {
 	}
 
 	public static Command path(final String name) {
-		final PathPlannerPath choreoPath = PathPlannerPath.fromChoreoTrajectory(name);
+		try {
+			final PathPlannerPath choreoPath = PathPlannerPath.fromChoreoTrajectory(name);
 		return AutoBuilder.followPath(choreoPath);
+		}
+		catch(IOException | ParseException e) {
+			// In case path can't be read, throw runtime exception
+			throw new RuntimeException();
+		}
 	}
 
 	public static Command dynamic(final String next, final double maxvel) {
-		final ChoreoTrajectory traj = Choreo.getTrajectory(next);
-
+		Optional<? extends Trajectory<?>> trajectory = Choreo.loadTrajectory(next);
+		Pose2d startingPose = new Pose2d();
+		if (trajectory.isPresent()) {
+			startingPose = trajectory.get().getInitialPose(true).orElse(new Pose2d());
+		}
+		final Pose2d finalStartPose = startingPose;
 		return AutoBuilder
 			.pathfindToPoseFlipped(
-				traj.getInitialPose(),
+				startingPose,
 				new PathConstraints(maxvel, 2, Constants.Drivetrain.maxAngularVelocity.in(Units.RadiansPerSecond), 2)
 			)
 			.alongWith(
-				new InstantCommand(() -> Logger.recordOutput("Drivetrain/Auto/DynamicTarget", traj.getInitialPose()))
+				new InstantCommand(() -> Logger.recordOutput("Drivetrain/Auto/DynamicTarget", finalStartPose))
 			);
 	}
 
@@ -324,8 +351,14 @@ public final class Autonomous {
 	}
 
 	public static Command dynamicThen(final String next) {
-		final PathPlannerPath traj = PathPlannerPath.fromChoreoTrajectory(next);
-
+		try{
+			final PathPlannerPath traj = PathPlannerPath.fromChoreoTrajectory(next);
+		Optional<? extends Trajectory<?>> trajectory = Choreo.loadTrajectory(next);
+		Pose2d startingPose = new Pose2d();
+		if (trajectory.isPresent()) {
+			startingPose = trajectory.get().getInitialPose(true).orElse(new Pose2d());
+		}
+		final Pose2d finalStartPose = startingPose;
 		return AutoBuilder
 			.pathfindThenFollowPath(
 				traj,
@@ -339,9 +372,14 @@ public final class Autonomous {
 			.alongWith(
 				new InstantCommand(
 					() -> Logger
-						.recordOutput("Drivetrain/Auto/DynamicTarget", Choreo.getTrajectory(next).getInitialPose())
+						.recordOutput("Drivetrain/Auto/DynamicTarget", finalStartPose)
 				)
 			);
+		}
+		catch(IOException | ParseException e) {
+			// In case path can't be read, throw runtime exception
+			throw new RuntimeException();
+		}
 	}
 
 	/*

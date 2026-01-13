@@ -7,13 +7,17 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.Slot1Configs;
 import com.ctre.phoenix6.configs.SlotConfigs;
 import com.ctre.phoenix6.signals.GravityTypeValue;
-import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.config.ModuleConfig;
+import com.pathplanner.lib.config.PIDConstants;
+//import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -73,21 +77,21 @@ public class Constants {
 		}
 	}
 
-	public static PIDValues fromPIDValues(final PIDValues pid) { return new PIDValues(pid.p, pid.d, pid.d, 0); }
+	public static PIDConstants fromPIDValues(final PIDValues pid) { return new PIDConstants(pid.p, pid.d, pid.d, 0); }
 
-	public static record Ratio<U extends Unit<U>>(double factor) {
+	/*public static record Ratio<U extends Unit<U>>(double factor) {
 		public Ratio(final U from, final U to) {
 			this(to.baseUnitMagnitude() / from.baseUnitMagnitude());
 		}
 
 		public Ratio(final double from, final double to) { this(to / from); }
 
-		public final U forward(final U value) { return value.(this.factor); }
+		public final U forward(final U value) { return value.divide(this.factor); }
 
 		public final U inverse(final U value) { return value.divide(this.factor); }
 
 		public final Ratio<U> inverse() { return new Ratio<U>(1 / this.factor); }
-	}
+	}*/
 
 	public static final class LimelightFX {
 		private LimelightFX() { throw new IllegalCallerException("Cannot instantiate `Constants.LimelightFX`"); }
@@ -158,6 +162,7 @@ public class Constants {
 		public static final class Auto {
 			public static final PIDValues translationDynamic = new PIDValues(7.5, 0, 0.5, 0);
 			public static final PIDValues thetaDynamic = new PIDValues(5, 0, 0.02, 0);
+			public static final RobotConfig config = new RobotConfig(63.5, 0.01, new ModuleConfig(0.0508, 5, 1.2, DCMotor.getKrakenX60(1), 0.1, 4));
 		}
 
 		public static final SlotConfigs azimuth = new SlotConfigs()

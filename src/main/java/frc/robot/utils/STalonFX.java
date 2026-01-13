@@ -10,4 +10,9 @@ public class STalonFX extends TalonFX {
 	public boolean stalling() {
 		return false; // todo
 	}
+
+    public void setInverted(boolean b) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setInverted'");
+    }
 }

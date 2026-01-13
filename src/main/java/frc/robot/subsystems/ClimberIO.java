@@ -15,7 +15,7 @@ public interface ClimberIO {
 
 	public default void offset(final double offset) {}
 
-	public default void updateInputs(final ClimberIO inputs) {}
+	public default void updateInputs(final ClimberIOInputs inputs) {}
 
 	public default void periodic() {}
 }
