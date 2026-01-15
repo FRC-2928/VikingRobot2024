@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import org.littletonrobotics.junction.Logger;
 
-//import choreo.*;
 import choreo.trajectory.Trajectory;
 import choreo.trajectory.SwerveSample;
 import choreo.Choreo;
@@ -30,62 +29,66 @@ public final class Autonomous {
 	public static SendableChooser<Command> createAutonomousChooser() {
 		final SendableChooser<Command> chooser = new SendableChooser<>();
 
-		chooser
-			.addOption(
-				"[comp] Five Note",
-				new SequentialCommandGroup(
-					new ReadyShooter(Units.Degrees.of(114), true),
-					Autonomous.setInitialPose("MiddleFiveNote.1"),
-					new WaitCommand(0.2),
-					new ShootFixed(false, 2),
-					Autonomous
-						.path("MiddleFiveNote.1")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyIntake, false)),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous
-						.dynamic("MiddleFiveNote.3")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2),
-					new ReadyShooter(Constants.Shooter.readyIntake, false),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous
-						.dynamic("MiddleFiveNote.4")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2),
-					new ReadyShooter(Constants.Shooter.readyIntake, false),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous
-						.dynamic("MiddleFiveNote.5")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2),
-					Autonomous.path("MiddleFiveNote.5"),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous
-						.dynamicThen("MiddleFiveNote.6")
-						.deadlineWith(
-							new WaitCommand(2).andThen(new ReadyShooter(Constants.Shooter.readyShootRear, true))
-						),
-					new ShootSpeaker(false, 2)
-				)
-			);
+		// TODO: Choreo 2026 (library and app) cannot read the old .chor and .traj files
+		// We need to create a new 2026 file, build desired paths, and export to the right folder
+		// before uncommenting the auto commands, otherwise the code will crash
 
-		chooser
-			.addOption(
-				"[comp] Source Side Center Note",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("SourceSideCenterNote.1"),
-					new ReadyShooter(Constants.Shooter.readyShootRear, true),
-					new ShootFixed(false, 2),
-					Autonomous.path("SourceSideCenterNote.1"),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous.dynamic("SourceSideCenterNote.2"),
-					new ParallelCommandGroup(
-						new ReadyShooter(Constants.Shooter.readyShootRear, true),
-						Autonomous.path("SourceSideCenterNote.2")
-					),
-					new ShootSpeaker(false, 2)
-				)
-			);
+		// chooser
+		// 	.addOption(
+		// 		"[comp] Five Note",
+		// 		new SequentialCommandGroup(
+		// 			new ReadyShooter(Units.Degrees.of(114), true),
+		// 			Autonomous.setInitialPose("MiddleFiveNote.1"),
+		// 			new WaitCommand(0.2),
+		// 			new ShootFixed(false, 2),
+		// 			Autonomous
+		// 				.path("MiddleFiveNote.1")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyIntake, false)),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous
+		// 				.dynamic("MiddleFiveNote.3")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2),
+		// 			new ReadyShooter(Constants.Shooter.readyIntake, false),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous
+		// 				.dynamic("MiddleFiveNote.4")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2),
+		// 			new ReadyShooter(Constants.Shooter.readyIntake, false),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous
+		// 				.dynamic("MiddleFiveNote.5")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2),
+		// 			Autonomous.path("MiddleFiveNote.5"),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous
+		// 				.dynamicThen("MiddleFiveNote.6")
+		// 				.deadlineWith(
+		// 					new WaitCommand(2).andThen(new ReadyShooter(Constants.Shooter.readyShootRear, true))
+		// 				),
+		// 			new ShootSpeaker(false, 2)
+		// 		)
+		// 	);
+
+		// chooser
+		// 	.addOption(
+		// 		"[comp] Source Side Center Note",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("SourceSideCenterNote.1"),
+		// 			new ReadyShooter(Constants.Shooter.readyShootRear, true),
+		// 			new ShootFixed(false, 2),
+		// 			Autonomous.path("SourceSideCenterNote.1"),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous.dynamic("SourceSideCenterNote.2"),
+		// 			new ParallelCommandGroup(
+		// 				new ReadyShooter(Constants.Shooter.readyShootRear, true),
+		// 				Autonomous.path("SourceSideCenterNote.2")
+		// 			),
+		// 			new ShootSpeaker(false, 2)
+		// 		)
+		// 	);
 
 		chooser
 			.addOption(
@@ -112,127 +115,127 @@ public final class Autonomous {
 				)
 			);
 
-		chooser
-			.addOption(
-				"[comp] Amp Side Center Note",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("AmpSideCenterNote.1"),
-					new ShootFixed(false, 2),
-					Autonomous.path("AmpSideCenterNote.1").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous
-						.dynamicThen("AmpSideCenterNote.2")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2),
-					Autonomous.path("AmpSideCenterNote.3").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous
-						.dynamicThen("AmpSideCenterNote.4")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2)
-				)
-			);
+		// chooser
+		// 	.addOption(
+		// 		"[comp] Amp Side Center Note",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("AmpSideCenterNote.1"),
+		// 			new ShootFixed(false, 2),
+		// 			Autonomous.path("AmpSideCenterNote.1").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous
+		// 				.dynamicThen("AmpSideCenterNote.2")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2),
+		// 			Autonomous.path("AmpSideCenterNote.3").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous
+		// 				.dynamicThen("AmpSideCenterNote.4")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2)
+		// 		)
+		// 	);
 
-		chooser
-			.addOption(
-				"[testing] Squirrel Amp Side Center Note",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("AmpSideCenterNote.1"),
-					new ShootFixed(false, 2),
-					Autonomous.path("AmpSideCenterNote.1").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(2),
-					new WaitCommand(2),
-					Autonomous
-						.dynamicThen("AmpSideCenterNote.2")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2),
-					Autonomous.path("AmpSideCenterNote.3").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous
-						.dynamicThen("AmpSideCenterNote.4")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2)
-				)
-			);
+		// chooser
+		// 	.addOption(
+		// 		"[testing] Squirrel Amp Side Center Note",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("AmpSideCenterNote.1"),
+		// 			new ShootFixed(false, 2),
+		// 			Autonomous.path("AmpSideCenterNote.1").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			new WaitCommand(2),
+		// 			Autonomous
+		// 				.dynamicThen("AmpSideCenterNote.2")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2),
+		// 			Autonomous.path("AmpSideCenterNote.3").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous
+		// 				.dynamicThen("AmpSideCenterNote.4")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2)
+		// 		)
+		// 	);
 
-		chooser
-			.addOption(
-				"[testing] Delayed Amp Side Center Note",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("AmpSideCenterNote.1"),
-					new WaitCommand(10),
-					new ShootFixed(false, 2),
-					Autonomous.path("AmpSideCenterNote.1").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous
-						.dynamicThen("AmpSideCenterNote.2")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2),
-					Autonomous.path("AmpSideCenterNote.3").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous
-						.dynamicThen("AmpSideCenterNote.4")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2)
-				)
-			);
+		// chooser
+		// 	.addOption(
+		// 		"[testing] Delayed Amp Side Center Note",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("AmpSideCenterNote.1"),
+		// 			new WaitCommand(10),
+		// 			new ShootFixed(false, 2),
+		// 			Autonomous.path("AmpSideCenterNote.1").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous
+		// 				.dynamicThen("AmpSideCenterNote.2")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2),
+		// 			Autonomous.path("AmpSideCenterNote.3").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous
+		// 				.dynamicThen("AmpSideCenterNote.4")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2)
+		// 		)
+		// 	);
 
-		chooser
-			.addOption(
-				"[comp] The Jamp",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("jamp.1"),
-					new ShootFixedDiag(false, 2),
-					Autonomous.path("jamp.1").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(1.3),
-					Autonomous
-						.dynamicThen("jamp.2")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2),
-					Autonomous.path("jamp.3").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(1.3),
-					Autonomous
-						.dynamicThen("jamp.4")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
-					new ShootSpeaker(false, 2)
-				)
-			);
+		// chooser
+		// 	.addOption(
+		// 		"[comp] The Jamp",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("jamp.1"),
+		// 			new ShootFixedDiag(false, 2),
+		// 			Autonomous.path("jamp.1").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(1.3),
+		// 			Autonomous
+		// 				.dynamicThen("jamp.2")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2),
+		// 			Autonomous.path("jamp.3").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(1.3),
+		// 			Autonomous
+		// 				.dynamicThen("jamp.4")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootRear, true)),
+		// 			new ShootSpeaker(false, 2)
+		// 		)
+		// 	);
 
-		chooser
-			.addOption(
-				"[comp] The Close Jamp",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("closeJamp.1"),
-					new ShootFixedDiag(false, 2),
-					Autonomous.path("closeJamp.1").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(1.3),
-					Autonomous
-						.dynamicThen("closeJamp.2")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootFront, true)),
-					new ShootSpeaker(false, 2),
-					Autonomous.path("closeJamp.3").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(1.3),
-					Autonomous
-						.dynamicThen("closeJamp.4")
-						.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootFront, true)),
-					new ShootSpeaker(false, 2)
-				)
-			);
+		// chooser
+		// 	.addOption(
+		// 		"[comp] The Close Jamp",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("closeJamp.1"),
+		// 			new ShootFixedDiag(false, 2),
+		// 			Autonomous.path("closeJamp.1").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(1.3),
+		// 			Autonomous
+		// 				.dynamicThen("closeJamp.2")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootFront, true)),
+		// 			new ShootSpeaker(false, 2),
+		// 			Autonomous.path("closeJamp.3").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(1.3),
+		// 			Autonomous
+		// 				.dynamicThen("closeJamp.4")
+		// 				.deadlineWith(new ReadyShooter(Constants.Shooter.readyShootFront, true)),
+		// 			new ShootSpeaker(false, 2)
+		// 		)
+		// 	);
 
-		chooser
-			.addOption(
-				"[comp] The Jource",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("jource.1"),
-					new ShootFixedDiag(false, 2),
-					Autonomous.path("jource.1").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(1.3),
-					Autonomous.dynamicThen("jource.2"),
-					new ShootSpeaker(false, 2),
-					Autonomous.path("jource.3").deadlineWith(new IntakeGround(false)),
-					new IntakeGround(true).withTimeout(1.3)
-				)
-			);
+		// chooser
+		// 	.addOption(
+		// 		"[comp] The Jource",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("jource.1"),
+		// 			new ShootFixedDiag(false, 2),
+		// 			Autonomous.path("jource.1").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(1.3),
+		// 			Autonomous.dynamicThen("jource.2"),
+		// 			new ShootSpeaker(false, 2),
+		// 			Autonomous.path("jource.3").deadlineWith(new IntakeGround(false)),
+		// 			new IntakeGround(true).withTimeout(1.3)
+		// 		)
+		// 	);
 
 		chooser
 			.addOption(
@@ -244,35 +247,35 @@ public final class Autonomous {
 				)
 			);
 
-		chooser
-			.addOption(
-				"[testing] Source Side Bulldoze",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("Bulldoze.1"),
-					new ReadyShooter(Constants.Shooter.readyShootRear, true),
-					new ShootFixed(false, 2),
-					Autonomous.path("Bulldoze.1"),
-					new IntakeGround(true).withTimeout(2)
-				)
-			);
+		// chooser
+		// 	.addOption(
+		// 		"[testing] Source Side Bulldoze",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("Bulldoze.1"),
+		// 			new ReadyShooter(Constants.Shooter.readyShootRear, true),
+		// 			new ShootFixed(false, 2),
+		// 			Autonomous.path("Bulldoze.1"),
+		// 			new IntakeGround(true).withTimeout(2)
+		// 		)
+		// 	);
 		chooser.addOption("[testing] Intake Only", new SequentialCommandGroup(new IntakeGround(true).withTimeout(2)));
-		chooser
-			.addOption(
-				"[testing] forward only",
-				new SequentialCommandGroup(Autonomous.setInitialPose("forwardBack.1"), Autonomous.path("forwardBack.1"))
-			);
-		chooser
-			.addOption(
-				"[testing] forward Back",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("forwardBack.1"),
-					Autonomous.path("forwardBack.1"),
-					new LookForNote(Units.Radians.of(Math.PI/3)),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous.dynamic("forwardBack.2"),
-					Autonomous.path("forwardBack.2")
-				)
-			);
+		// chooser
+		// 	.addOption(
+		// 		"[testing] forward only",
+		// 		new SequentialCommandGroup(Autonomous.setInitialPose("forwardBack.1"), Autonomous.path("forwardBack.1"))
+		// 	);
+		// chooser
+		// 	.addOption(
+		// 		"[testing] forward Back",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("forwardBack.1"),
+		// 			Autonomous.path("forwardBack.1"),
+		// 			new LookForNote(Units.Radians.of(Math.PI/3)),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous.dynamic("forwardBack.2"),
+		// 			Autonomous.path("forwardBack.2")
+		// 		)
+		// 	);
 		chooser.addOption(
 			"[testing] LookForNote", 
 			new SequentialCommandGroup(
@@ -280,19 +283,19 @@ public final class Autonomous {
 				(Robot.cont.drivetrain.limelightNote.hasValidTargets() ?  new IntakeGround(true).withTimeout(4) : new LookForNote(Units.Radians.of(-Math.PI/2)))
 			)
 		);
-		chooser
-			.addOption("[testing] dynamic path back", new SequentialCommandGroup(Autonomous.dynamic("forwardBack.2")));
-		chooser.addOption("[testing] return to start", new SequentialCommandGroup(Autonomous.path("forwardBack.2")));
-		chooser
-			.addOption(
-				"[testing] forward path too back",
-				new SequentialCommandGroup(
-					Autonomous.setInitialPose("forwardBack.1"),
-					Autonomous.path("forwardBack.1"),
-					new IntakeGround(true).withTimeout(2),
-					Autonomous.dynamic("forwardBack.2")
-				)
-			);
+		// chooser
+		// 	.addOption("[testing] dynamic path back", new SequentialCommandGroup(Autonomous.dynamic("forwardBack.2")));
+		// chooser.addOption("[testing] return to start", new SequentialCommandGroup(Autonomous.path("forwardBack.2")));
+		// chooser
+		// 	.addOption(
+		// 		"[testing] forward path too back",
+		// 		new SequentialCommandGroup(
+		// 			Autonomous.setInitialPose("forwardBack.1"),
+		// 			Autonomous.path("forwardBack.1"),
+		// 			new IntakeGround(true).withTimeout(2),
+		// 			Autonomous.dynamic("forwardBack.2")
+		// 		)
+		// 	);
 		chooser.addOption("[testing] voltage ramp", new VoltageRampCommand());
 		return chooser;
 	}
