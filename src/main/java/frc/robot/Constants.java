@@ -162,7 +162,8 @@ public class Constants {
 		public static final class Auto {
 			public static final PIDValues translationDynamic = new PIDValues(7.5, 0, 0.5, 0);
 			public static final PIDValues thetaDynamic = new PIDValues(5, 0, 0.02, 0);
-			public static final RobotConfig config = new RobotConfig(63.5, 0.01, new ModuleConfig(0.0508, 5, 1.2, DCMotor.getKrakenX60(1), 0.1, 4));
+			public static final RobotConfig config = new RobotConfig(63.5, 0.01, new ModuleConfig(0.0508, 5, 1.2, DCMotor.getKrakenX60(1), 0.1, 4),
+																	swerveFrontLeftTranslation, swerveFrontRightTranslation, swerveBackLeftTranslation, swerveBackRightTranslation);
 		}
 
 		public static final SlotConfigs azimuth = new SlotConfigs()

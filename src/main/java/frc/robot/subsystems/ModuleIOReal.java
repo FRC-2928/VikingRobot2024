@@ -18,6 +18,7 @@ import org.littletonrobotics.junction.Logger;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -25,6 +26,7 @@ import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
@@ -136,7 +138,8 @@ public class ModuleIOReal implements ModuleIO {
 		this.azimuth.getConfigurator().apply(azimuthConfig);
 		this.azimuth.setNeutralMode(NeutralModeValue.Brake);
 
-		if(this.place == Place.FrontRight || this.place == Place.BackRight) this.drive.setInverted(true);
+		var configurator = this.drive.getConfigurator();
+		if(this.place == Place.FrontRight || this.place == Place.BackRight) configurator.apply(new MotorOutputConfigs().withInverted(InvertedValue.Clockwise_Positive));
 
 		final CANcoderConfiguration encoderConfig = new CANcoderConfiguration();
 		//encoderConfig.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
