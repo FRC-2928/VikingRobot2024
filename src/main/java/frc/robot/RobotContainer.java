@@ -9,7 +9,7 @@ import frc.robot.oi.DriverOI;
 import frc.robot.oi.OperatorOI;
 import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Diagnostics;
-import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.drive.DriveSubsystem;
 import frc.robot.subsystems.LimelightFXManager;
 import frc.robot.subsystems.Shooter;
 
@@ -21,7 +21,7 @@ public class RobotContainer {
 
 	public final Diagnostics diag;
 
-	public final Drivetrain drivetrain;
+	public final DriveSubsystem drivetrain;
 	public final Shooter shooter;
 	public final Climber climber;
 
@@ -35,7 +35,7 @@ public class RobotContainer {
 		Tuning.flywheelVelocity.get(); // load the class to put the tuning controls on the dashboard
 
 		this.diag = new Diagnostics();
-		this.drivetrain = new Drivetrain();
+		this.drivetrain = new DriveSubsystem();
 		this.shooter = new Shooter();
 		this.climber = new Climber();
 		this.fxm = new LimelightFXManager();

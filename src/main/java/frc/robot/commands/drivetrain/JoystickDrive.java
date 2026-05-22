@@ -16,10 +16,10 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import frc.robot.Constants;
 import frc.robot.Robot;
 import frc.robot.oi.DriverOI;
-import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.drive.DriveSubsystem;
 
 public class JoystickDrive extends Command {
-	public JoystickDrive(final Drivetrain drivetrain) {
+	public JoystickDrive(final DriveSubsystem drivetrain) {
 		this.drivetrain = drivetrain;
 
 		this.addRequirements(this.drivetrain);
@@ -35,7 +35,7 @@ public class JoystickDrive extends Command {
 		return chooser;
 	}
 
-	public final Drivetrain drivetrain;
+	public final DriveSubsystem drivetrain;
 	public final DriverOI oi = Robot.cont.driverOI;
 
 	public Angle forTarget = Units.Radians.zero();
@@ -43,9 +43,9 @@ public class JoystickDrive extends Command {
 	private final ProfiledPIDController absoluteController = Constants.Drivetrain.absoluteRotationPID
 		.createProfiledController(Constants.Drivetrain.absoluteRotationConstraints);
 
-	// no execute method, drivetrain handles that
+	// no execute method — DriveSubsystem.periodic() calls speeds() and applies them
 
-	// this is a separate method so that drivetrain can call it to get base speeds to modify
+	// Separate method so DriveSubsystem can call it to get base speeds to modify
 	public ChassisSpeeds speeds() {
 		if(DriverStation.isAutonomous()) return new ChassisSpeeds();
 
@@ -59,10 +59,10 @@ public class JoystickDrive extends Command {
 		final double lateral = MathUtil.applyDeadband(this.oi.driveLateral.get(), 0.1);
 
 		// cartesian -> polar
-		final Rotation2d direction = Rotation2d.fromRadians(Math.atan2(lateral, axial)); // why?
+		final Rotation2d direction = Rotation2d.fromRadians(Math.atan2(lateral, axial));
 
 		// Calculate the move magnitude
-		final double magnitude = Math.pow(MathUtil.clamp(Math.hypot(axial, lateral), 0, 1), 2); // get length and normalize
+		final double magnitude = Math.pow(MathUtil.clamp(Math.hypot(axial, lateral), 0, 1), 2);
 
 		final double dx = Math.cos(direction.getRadians()) * magnitude;
 		final double dy = Math.sin(direction.getRadians()) * magnitude;
@@ -97,12 +97,12 @@ public class JoystickDrive extends Command {
 
 			this.forMagnitude = this.forMagnitude * 0.5 + 0.5;
 
-			final double measurement = this.drivetrain.est.getEstimatedPosition().getRotation().getRotations();
+			final double measurement = this.drivetrain.getPose().getRotation().getRotations();
 			final double setpoint = this.forTarget.in(Units.Rotations);
 
 			theta = MathUtil
 				.applyDeadband(
-					-(this.absoluteController.calculate(measurement, setpoint)), // todo: determine whether this - is ok
+					-(this.absoluteController.calculate(measurement, setpoint)),
 					0.075
 				);
 		}

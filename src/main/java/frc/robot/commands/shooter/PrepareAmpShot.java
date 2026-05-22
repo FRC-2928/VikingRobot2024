@@ -18,7 +18,7 @@ public class PrepareAmpShot extends Command {
 	@Override
 	public void execute() {
 		// just allow drive...
-		Robot.cont.drivetrain.control(Robot.cont.drivetrain.joystickSpeeds);
+		Robot.cont.drivetrain.driveFieldOriented(Robot.cont.drivetrain.joystickSpeeds);
 	}
 
 	@Override

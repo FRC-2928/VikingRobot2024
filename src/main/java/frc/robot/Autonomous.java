@@ -313,7 +313,7 @@ public final class Autonomous {
 		final Pose2d initial = getTrajStartPose2d(Choreo.loadTrajectory(name));
 
 		return Commands.runOnce(() -> {
-			Robot.cont.drivetrain.reset(Autonomous.getPoseForAlliance(initial));
+			Robot.cont.drivetrain.resetPose(Autonomous.getPoseForAlliance(initial));
 
 			Logger.recordOutput("Drivetrain/Auto/x0", initial.getX());
 			Logger.recordOutput("Drivetrain/Auto/y0", initial.getY());

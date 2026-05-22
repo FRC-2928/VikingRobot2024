@@ -8,7 +8,7 @@ public class TestDrive extends Command {
 	public TestDrive() { this.addRequirements(Robot.cont.drivetrain); }
 
 	@Override
-	public void execute() { Robot.cont.drivetrain.control(new ChassisSpeeds(2, 0, 0)); }
+	public void execute() { Robot.cont.drivetrain.driveFieldOriented(new ChassisSpeeds(2, 0, 0)); }
 
 	@Override
 	public void end(final boolean interrupted) { Robot.cont.drivetrain.halt(); }

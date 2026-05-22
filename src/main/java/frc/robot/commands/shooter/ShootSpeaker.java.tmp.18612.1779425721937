@@ -128,7 +128,7 @@ public class ShootSpeaker extends Command {
 				// 4. Combine the translation-only and rotation-only speeds into a single ChassisSpeeds object
 				// 5. Finally, pass the combined ChassisSpeeds to the drivetrain for control
 				Robot.cont.drivetrain
-					.driveFieldOriented(
+					.control(
 						this
 							.norot(Robot.cont.drivetrain.joystickSpeeds)
 							.plus(
@@ -200,7 +200,7 @@ public class ShootSpeaker extends Command {
 
 				// same auto-align as the previous case, but with the rear limelight's offsets...
 				Robot.cont.drivetrain
-					.driveFieldOriented(
+					.control(
 						this
 							.norot(Robot.cont.drivetrain.joystickSpeeds)
 							.plus(
@@ -223,13 +223,13 @@ public class ShootSpeaker extends Command {
 			} else {
 				// shooter limelight doesn't have a target but we're facing the speaker -- rotate into position
 				// and begin target acquisition sequence
-				Robot.cont.drivetrain.driveFieldOriented(Robot.cont.drivetrain.joystickSpeeds);
+				Robot.cont.drivetrain.control(Robot.cont.drivetrain.joystickSpeeds);
 				Robot.cont.shooter.io.rotate(Constants.Shooter.readyShootFront);
 			}
 		} else {
 			// we're not facing the speaker or the shooter is not facing the right way...
 			// either way, rotate the shooter into position
-			Robot.cont.drivetrain.driveFieldOriented(Robot.cont.drivetrain.joystickSpeeds);
+			Robot.cont.drivetrain.control(Robot.cont.drivetrain.joystickSpeeds);
 			Robot.cont.shooter.io.rotate(facingForward ? Constants.Shooter.readyShootFront : this.rearAngle);
 		}
 

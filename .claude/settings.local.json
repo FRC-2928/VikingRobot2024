@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:v6.docs.ctr-electronics.com)",
+      "WebFetch(domain:api.ctr-electronics.com)",
+      "Bash(./gradlew build:*)",
+      "Bash(./gradlew --stop)"
+    ]
+  }
+}

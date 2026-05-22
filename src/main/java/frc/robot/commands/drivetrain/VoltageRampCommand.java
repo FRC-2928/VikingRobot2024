@@ -1,6 +1,5 @@
 package frc.robot.commands.drivetrain;
 
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import frc.robot.Robot;
 import edu.wpi.first.wpilibj2.command.Command;
 
@@ -17,7 +16,7 @@ public class VoltageRampCommand extends Command {
 
 	@Override
 	public void execute() {
-		Robot.cont.drivetrain.runCharacterization(VoltageRampCommand.voltage);
+		// runCharacterization is not available in DriveSubsystem; use CTRE SysId routines instead
 		VoltageRampCommand.voltage += 0.005;
 	}
 

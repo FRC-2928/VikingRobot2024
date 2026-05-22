@@ -19,7 +19,7 @@ public class DriveTime extends Command {
 	public void initialize() { this.end = Timer.getFPGATimestamp() + this.time; }
 
 	@Override
-	public void execute() { Robot.cont.drivetrain.control(Robot.cont.drivetrain.rod(new ChassisSpeeds(-2, 0, 0))); }
+	public void execute() { Robot.cont.drivetrain.driveRobotOriented(new ChassisSpeeds(-2, 0, 0)); }
 
 	@Override
 	public boolean isFinished() { return Timer.getFPGATimestamp() >= this.end; }

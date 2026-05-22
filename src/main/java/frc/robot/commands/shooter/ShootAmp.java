@@ -22,7 +22,7 @@ public class ShootAmp extends Command {
 		Robot.cont.shooter.io.runFlywheels(Tuning.ampPower.get());
 
 		Robot.cont.drivetrain
-			.control(
+			.driveFieldOriented(
 				Robot.cont.drivetrain.joystickSpeeds.plus(Robot.cont.drivetrain.rod(new ChassisSpeeds(0, 0, 0))).div(2)
 			);
 

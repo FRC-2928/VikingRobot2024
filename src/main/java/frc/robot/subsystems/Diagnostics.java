@@ -33,10 +33,9 @@ public class Diagnostics extends SubsystemBase {
 
 		@Override
 		public void initialize() {
-			for(final SwerveModule module : Robot.cont.drivetrain.modules) {
-				final ModuleIOReal io = (ModuleIOReal) module.io;
-				io.azimuth.setNeutralMode(NeutralModeValue.Coast);
-				io.drive.setNeutralMode(NeutralModeValue.Coast);
+			for(int i = 0; i < 4; i++) {
+				Robot.cont.drivetrain.getModule(i).getDriveMotor().setNeutralMode(NeutralModeValue.Coast);
+				Robot.cont.drivetrain.getModule(i).getSteerMotor().setNeutralMode(NeutralModeValue.Coast);
 			}
 
 			((ShooterIOReal) Robot.cont.shooter.io).pivot.setNeutralMode(NeutralModeValue.Coast);
@@ -50,10 +49,9 @@ public class Diagnostics extends SubsystemBase {
 
 		@Override
 		public void end(final boolean interrupted) {
-			for(final SwerveModule module : Robot.cont.drivetrain.modules) {
-				final ModuleIOReal io = (ModuleIOReal) module.io;
-				io.azimuth.setNeutralMode(NeutralModeValue.Brake);
-				io.drive.setNeutralMode(NeutralModeValue.Brake);
+			for(int i = 0; i < 4; i++) {
+				Robot.cont.drivetrain.getModule(i).getDriveMotor().setNeutralMode(NeutralModeValue.Brake);
+				Robot.cont.drivetrain.getModule(i).getSteerMotor().setNeutralMode(NeutralModeValue.Brake);
 			}
 
 			((ShooterIOReal) Robot.cont.shooter.io).pivot.setNeutralMode(NeutralModeValue.Brake);

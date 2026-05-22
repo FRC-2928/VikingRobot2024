@@ -44,23 +44,21 @@ public class IntakeGround extends Command {
 		Robot.cont.shooter.io.runIntake(pivotReady ? Demand.Forward : Demand.Halt);
 
 		if(this.correction)
-			Robot.cont.drivetrain
-				.control(
-					Robot.cont.drivetrain.joystickSpeeds
-						.plus(
-							Robot.cont.drivetrain
-								.rod(
-									new ChassisSpeeds(
-										this.calculateSpeedX(),
-										Robot.cont.drivetrain.limelightNote
-											.getTargetHorizontalOffset()
-											.in(Units.Rotations)
-											* 10,
-										0
-									).times(pivotReady ? 1 : 1)
-								)
+			Robot.cont.drivetrain.driveFieldOriented(
+				Robot.cont.drivetrain.joystickSpeeds
+					.plus(
+						Robot.cont.drivetrain.rod(
+							new ChassisSpeeds(
+								this.calculateSpeedX(),
+								Robot.cont.drivetrain.limelightNote
+									.getTargetHorizontalOffset()
+									.in(Units.Rotations)
+									* 10,
+								0
+							)
 						)
-				);
+					)
+			);
 
 		this.haptics.update();
 		
@@ -82,7 +80,7 @@ public class IntakeGround extends Command {
 		Robot.cont.shooter.io.runFeeder(Demand.Halt);
 		Robot.cont.shooter.io.runIntake(Demand.Halt);
 
-		Robot.cont.drivetrain.control(new ChassisSpeeds());
+		Robot.cont.drivetrain.driveFieldOriented(new ChassisSpeeds());
 
 		this.haptics.stop();
 	}

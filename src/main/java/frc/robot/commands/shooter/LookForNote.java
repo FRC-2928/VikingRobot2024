@@ -35,8 +35,8 @@ public class LookForNote extends Command {
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
-    this.currentAngle = Units.Rotations.of(Robot.cont.drivetrain.est.getEstimatedPosition().getRotation().getRotations()); 
-    this.initalAngle = Units.Rotations.of(Robot.cont.drivetrain.est.getEstimatedPosition().getRotation().getRotations());
+    this.currentAngle = Units.Rotations.of(Robot.cont.drivetrain.getPose().getRotation().getRotations());
+    this.initalAngle = Units.Rotations.of(Robot.cont.drivetrain.getPose().getRotation().getRotations());
     this.absoluteController.enableContinuousInput(-0.5,0.5);
     this.setpoint = this.initalAngle.plus(this.rotationAmount);
     this.absoluteController.reset(this.initalAngle.in(Units.Rotations));
@@ -45,21 +45,11 @@ public class LookForNote extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    this.currentAngle = Units.Rotations.of(Robot.cont.drivetrain.est.getEstimatedPosition().getRotation().getRotations()); 
+    this.currentAngle = Units.Rotations.of(Robot.cont.drivetrain.getPose().getRotation().getRotations());
     double measurement = this.currentAngle.in(Units.Rotations);
     this.computedPidValue = -this.absoluteController.calculate(measurement,this.setpoint.in(Units.Rotations));
     AngularVelocity rotationSpeed = Constants.Drivetrain.maxAngularVelocity.times( MathUtil.applyDeadband(this.computedPidValue,0.008));
-    Robot.cont.drivetrain
-      .control(
-        Robot.cont.drivetrain
-          .rod(
-          new ChassisSpeeds(
-            0,
-            0,
-            rotationSpeed.in(Units.RadiansPerSecond)
-            )
-          )
-      );
+    Robot.cont.drivetrain.driveFieldOriented(new ChassisSpeeds(0, 0, rotationSpeed.in(Units.RadiansPerSecond)));
     Logger.recordOutput("Drivetrain/Auto/setpoint",(this.setpoint.in(Units.Radians)));
     Logger.recordOutput("Drivetrain/Auto/currentAngle",(this.currentAngle.in(Units.Radians)));
     Logger.recordOutput("Drivetrain/Auto/initialAngle",(this.initalAngle.in(Units.Radians)));
