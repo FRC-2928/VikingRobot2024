@@ -158,6 +158,18 @@ Rules:
 - Include mermaid diagrams where they aid understanding
 - Reference specific source files/classes so docs stay grounded in the code
 
+## API Documentation
+
+Before implementing any WPILib or CTRE feature, consult the relevant docs. See `docs/api-reference.md` for the full index of documentation URLs and guidance on when to use each.
+
+**Do not guess API signatures or configuration fields — look them up.**
+
+Key links:
+- WPILib Java API: https://github.wpilib.org/allwpilib/docs/release/java/index.html
+- WPILib Command-Based: https://docs.wpilib.org/en/stable/docs/software/commandbased/index.html
+- CTRE Phoenix 6 Docs: https://v6.docs.ctr-electronics.com/en/latest/index.html
+- CTRE Phoenix 6 Java API: https://api.ctr-electronics.com/phoenix6/stable/java/
+
 ## Conventions
 
 - Logging: AdvantageKit (`Logger.processInputs`, `Logger.recordOutput`)
