@@ -160,15 +160,38 @@ Rules:
 
 ## API Documentation
 
-Before implementing any WPILib or CTRE feature, consult the relevant docs. See `docs/api-reference.md` for the full index of documentation URLs and guidance on when to use each.
+Cross-reference the official docs when writing a new class or using library methods not already present in the codebase. Do not guess constructors, method signatures, config fields, or enum values. If the codebase already demonstrates the pattern you need, follow the existing usage without a doc lookup.
 
-**Do not guess API signatures or configuration fields — look them up.**
+See `docs/api-reference.md` for the full index of documentation URLs.
 
 Key links:
 - WPILib Java API: https://github.wpilib.org/allwpilib/docs/release/java/index.html
 - WPILib Command-Based: https://docs.wpilib.org/en/stable/docs/software/commandbased/index.html
 - CTRE Phoenix 6 Docs: https://v6.docs.ctr-electronics.com/en/latest/index.html
 - CTRE Phoenix 6 Java API: https://api.ctr-electronics.com/phoenix6/stable/java/
+
+## Commit Messages
+
+```
+Subject of the commit
+
+[Problem]
+Description of the problem or new feature — why is this patch needed?
+Be specific to this patch; don't rely on a general comment for an entire patch set.
+
+[Solution]
+Description of the change — how did you solve the problem?
+
+[Test]
+Describe any tests performed on the code.
+At minimum, the code MUST build and any unit tests MUST succeed.
+If possible, code SHOULD be simulated and results checked for accuracy.
+```
+
+Rules:
+- Second line MUST be blank (separates subject from body)
+- All three sections ([Problem], [Solution], [Test]) are mandatory
+- [Test] must honestly reflect what was actually verified
 
 ## Conventions
 
