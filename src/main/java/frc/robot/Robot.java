@@ -136,7 +136,7 @@ public class Robot extends LoggedRobot {
 	public void teleopInit() {
 		CommandScheduler.getInstance().cancelAll();
 
-		this.container.drivetrain.setDefaultCommand(this.container.drivetrain.joystickDrive);
+		this.container.drivetrain.setDefaultCommand(new frc.robot.commands.drivetrain.JoystickDrive(this.container.drivetrain));
 	}
 
 	@Override
@@ -151,7 +151,7 @@ public class Robot extends LoggedRobot {
 	public void testInit() {
 		CommandScheduler.getInstance().cancelAll();
 
-		this.container.drivetrain.setDefaultCommand(this.container.drivetrain.joystickDrive);
+		this.container.drivetrain.setDefaultCommand(new frc.robot.commands.drivetrain.JoystickDrive(this.container.drivetrain));
 	}
 
 	@Override

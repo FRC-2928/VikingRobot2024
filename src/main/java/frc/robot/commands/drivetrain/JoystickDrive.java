@@ -43,9 +43,14 @@ public class JoystickDrive extends Command {
 	private final ProfiledPIDController absoluteController = Constants.Drivetrain.absoluteRotationPID
 		.createProfiledController(Constants.Drivetrain.absoluteRotationConstraints);
 
-	// no execute method — DriveSubsystem.periodic() calls speeds() and applies them
+	@Override
+	public void execute() {
+		final ChassisSpeeds s = speeds();
+		this.drivetrain.joystickSpeeds = s;
+		this.drivetrain.driveFieldOriented(s);
+	}
 
-	// Separate method so DriveSubsystem can call it to get base speeds to modify
+	// Separate method so IntakeGround can read base speeds to add corrections
 	public ChassisSpeeds speeds() {
 		if(DriverStation.isAutonomous()) return new ChassisSpeeds();
 
@@ -79,7 +84,7 @@ public class JoystickDrive extends Command {
 
 		final String selectedDriveMode = Robot.cont.getDriveMode();
 		if("Swerve Drive".equals(selectedDriveMode)) {
-			theta = MathUtil.applyDeadband(this.oi.driveFORX.get(), 0.075);
+			theta = -MathUtil.applyDeadband(this.oi.driveFORX.get(), 0.075);
 		} else {
 			// Joystick Right Axis
 			final double rotX = this.oi.driveFORX.get();
