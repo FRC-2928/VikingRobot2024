@@ -36,6 +36,7 @@ public class RobotContainer {
 
 		this.diag = new Diagnostics();
 		this.drivetrain = new DriveSubsystem();
+		this.drivetrain.setDefaultCommand(new JoystickDrive(this.drivetrain));
 		this.shooter = new Shooter();
 		this.climber = new Climber();
 		this.fxm = new LimelightFXManager();
