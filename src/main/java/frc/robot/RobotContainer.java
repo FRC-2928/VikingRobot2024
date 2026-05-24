@@ -4,9 +4,10 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.commands.drivetrain.JoystickDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import frc.robot.oi.DriverOI;
 import frc.robot.oi.OperatorOI;
+import frc.robot.superstructure.Superstructure;
 import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Diagnostics;
 import frc.robot.subsystems.drive.DriveSubsystem;
@@ -22,6 +23,7 @@ public class RobotContainer {
 	public final Diagnostics diag;
 
 	public final DriveSubsystem drivetrain;
+	public final Superstructure superstructure;
 	public final Shooter shooter;
 	public final Climber climber;
 
@@ -36,7 +38,7 @@ public class RobotContainer {
 
 		this.diag = new Diagnostics();
 		this.drivetrain = new DriveSubsystem();
-		this.drivetrain.setDefaultCommand(new JoystickDrive(this.drivetrain));
+		this.superstructure = new Superstructure(this.drivetrain);
 		this.shooter = new Shooter();
 		this.climber = new Climber();
 		this.fxm = new LimelightFXManager();
@@ -44,13 +46,21 @@ public class RobotContainer {
 		this.diag.chirp(600, 500);
 		this.diag.chirp(900, 500);
 
+		this.drivetrain.configureJoystick(
+			this.driverOI.driveAxial,
+			this.driverOI.driveLateral,
+			this.driverOI.driveFORX,
+			this.driverOI.driveFORY,
+			this::getDriveMode
+		);
+
 		this.autonomousChooser = new LoggedDashboardChooser<>(
 			"Autonomous Routine",
 			Autonomous.createAutonomousChooser()
 		);
 		this.driveModeChooser = new LoggedDashboardChooser<>(
 			"Drive Mode",
-			JoystickDrive.createDriveModeChooser()
+			RobotContainer.createDriveModeChooser()
 		);
 
 		this.driverOI.configureControls();
@@ -62,4 +72,12 @@ public class RobotContainer {
 	public Command getAutonomousCommand() { return this.autonomousChooser.get(); }
 
 	public String getDriveMode() { return this.driveModeChooser.get(); }
+
+	public static SendableChooser<String> createDriveModeChooser() {
+		final SendableChooser<String> chooser = new SendableChooser<>();
+		chooser.addOption("Swerve Drive", "Swerve Drive");
+		chooser.addOption("Field Oriented", "Field Oriented");
+		chooser.setDefaultOption("Swerve Drive", "Swerve Drive");
+		return chooser;
+	}
 }

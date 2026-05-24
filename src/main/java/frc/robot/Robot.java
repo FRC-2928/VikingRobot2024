@@ -16,7 +16,6 @@ import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import frc.robot.commands.drivetrain.LockWheels;
 import frc.robot.commands.shooter.IntakeGround;
 import frc.robot.commands.shooter.LookForNote;
 
@@ -95,7 +94,6 @@ public class Robot extends LoggedRobot {
 		Robot.commandToRun = new LookForNote(Units.Radians.of(Math.PI/4));
 		Robot.needToLookOtherWay = true;
 		Robot.commandToRun.schedule();
-		this.container.drivetrain.setDefaultCommand(new LockWheels());
 		//TODO: fix this whole thing
 	}
 
@@ -135,8 +133,6 @@ public class Robot extends LoggedRobot {
 	@Override
 	public void teleopInit() {
 		CommandScheduler.getInstance().cancelAll();
-
-		this.container.drivetrain.setDefaultCommand(new frc.robot.commands.drivetrain.JoystickDrive(this.container.drivetrain));
 	}
 
 	@Override
@@ -150,8 +146,6 @@ public class Robot extends LoggedRobot {
 	@Override
 	public void testInit() {
 		CommandScheduler.getInstance().cancelAll();
-
-		this.container.drivetrain.setDefaultCommand(new frc.robot.commands.drivetrain.JoystickDrive(this.container.drivetrain));
 	}
 
 	@Override

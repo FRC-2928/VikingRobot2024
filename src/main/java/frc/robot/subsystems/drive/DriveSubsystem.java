@@ -1,32 +1,74 @@
 package frc.robot.subsystems.drive;
 
+import java.util.function.Supplier;
+
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 import org.littletonrobotics.junction.Logger;
 
+import frc.robot.Constants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.superstructure.SuperstructureContext;
 import frc.robot.vision.Limelight;
 
 /**
  * Swerve drivetrain subsystem backed by CTRE's CommandSwerveDrivetrain.
  *
- * Stripped to the minimum needed to confirm basic driving works.
- * PathPlanner, vision fusion, and goal-based architecture will be
- * added incrementally once driving is verified.
+ * Owns all drive behavior via the goal-based pattern:
+ *   applyGoal(SuperstructureContext) → wantedState → periodic() → hardware
+ *
+ * Callers set a goal each cycle via Commands.run(); the subsystem decides how to
+ * fulfill it. The default goal is TELEOP (driver joystick). LOCK engages X-formation
+ * braking. During autonomous, TELEOP automatically becomes LOCK so the robot holds
+ * position when no auto command owns the drivetrain.
  */
 public class DriveSubsystem extends CommandSwerveDrivetrain {
 
+    // ── Goal / state machine ──────────────────────────────────────────────────
+
+    enum WantedState { TELEOP, LOCK }
+    enum SystemState  { TELEOP, LOCK }
+
+    private WantedState wantedState = WantedState.TELEOP;
+    private SystemState systemState = SystemState.TELEOP;
+
+    // ── Joystick suppliers (injected by RobotContainer after OI is built) ────
+
+    private Supplier<Double> axialSupplier    = () -> 0.0;
+    private Supplier<Double> lateralSupplier  = () -> 0.0;
+    private Supplier<Double> forXSupplier     = () -> 0.0;
+    private Supplier<Double> forYSupplier     = () -> 0.0;
+    private Supplier<String> driveModeSupplier = () -> "Swerve Drive";
+
+    // ── Absolute-rotation PID (used in "Field Oriented" drive mode) ───────────
+
+    private final ProfiledPIDController absoluteController =
+        Constants.Drivetrain.absoluteRotationPID
+            .createProfiledController(Constants.Drivetrain.absoluteRotationConstraints);
+
+    private Angle  forTarget    = Units.Radians.zero();
+    private double forMagnitude = 0.5;
+
     // ── Swerve requests (allocate once, mutate via with-methods) ─────────────
+
     private final SwerveRequest.FieldCentric fieldCentricRequest =
         new SwerveRequest.FieldCentric()
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
@@ -39,21 +81,24 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
         new SwerveRequest.SwerveDriveBrake();
 
     // ── Vision standard deviations ───────────────────────────────────────────
+
     private static final Matrix<N3, N1> VISION_STD_DEVS =
         VecBuilder.fill(0.7, 0.7, 9999999);
 
     // ── Limelights (used by shooter/intake commands) ─────────────────────────
+
     public final Limelight limelightNote    = new Limelight("limelight-note");
     public final Limelight limelightShooter = new Limelight("limelight-shooter");
     public final Limelight limelightRear    = new Limelight("limelight-rear");
 
     /**
-     * Cached joystick chassis speeds, updated by JoystickDrive.execute().
-     * Read by IntakeGround to add vision-based corrections.
+     * Cached joystick chassis speeds, updated each cycle during TELEOP.
+     * Read by IntakeGround to apply vision-based corrections on top of driver input.
      */
     public ChassisSpeeds joystickSpeeds = new ChassisSpeeds();
 
     // ── Constructor ──────────────────────────────────────────────────────────
+
     public DriveSubsystem() {
         super(
             TunerConstants.DrivetrainConstants,
@@ -63,15 +108,51 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
             TunerConstants.BackRight
         );
 
+        absoluteController.enableContinuousInput(-0.5, 0.5);
+
         CommandScheduler.getInstance().registerSubsystem(this);
         setVisionMeasurementStdDevs(VISION_STD_DEVS);
+    }
+
+    // ── Goal API ──────────────────────────────────────────────────────────────
+
+    /**
+     * Inject joystick suppliers from OI. Call once from RobotContainer after
+     * both the drivetrain and OI objects are constructed.
+     */
+    public void configureJoystick(
+            final Supplier<Double> axial,
+            final Supplier<Double> lateral,
+            final Supplier<Double> forX,
+            final Supplier<Double> forY,
+            final Supplier<String> driveMode) {
+        this.axialSupplier    = axial;
+        this.lateralSupplier  = lateral;
+        this.forXSupplier     = forX;
+        this.forYSupplier     = forY;
+        this.driveModeSupplier = driveMode;
+    }
+
+    /**
+     * Set the desired drive behavior for this cycle.
+     * Called every 20 ms by {@link frc.robot.superstructure.Superstructure#periodic()}.
+     */
+    public void applyGoal(final SuperstructureContext ctx) {
+        wantedState = switch (ctx.goal().drive()) {
+            case TELEOP     -> WantedState.TELEOP;
+            case LOCK       -> WantedState.LOCK;
+            case AUTONOMOUS -> WantedState.TELEOP; // auto commands drive via driveFieldOriented() directly
+        };
     }
 
     // ── Periodic ─────────────────────────────────────────────────────────────
 
     @Override
     public void periodic() {
-        super.periodic(); // applies alliance-relative operator perspective
+        super.periodic(); // applies alliance-relative operator perspective + odometry
+
+        systemState = handleStateTransition();
+        applyState();
 
         final SwerveDriveState state = getState();
         Logger.recordOutput("Drive/Pose",          state.Pose);
@@ -79,9 +160,86 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
         Logger.recordOutput("Drive/ModuleStates",   state.ModuleStates);
         Logger.recordOutput("Drive/ModuleTargets",  state.ModuleTargets);
         Logger.recordOutput("Drive/OdometryPeriod", state.OdometryPeriod);
+        Logger.recordOutput("Drive/SystemState",    systemState.toString());
     }
 
-    // ── Control methods ───────────────────────────────────────────────────────
+    private SystemState handleStateTransition() {
+        return switch (wantedState) {
+            // During autonomous, fall back to X-lock when no auto command owns the drivetrain.
+            case TELEOP -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.TELEOP;
+            case LOCK   -> SystemState.LOCK;
+        };
+    }
+
+    private void applyState() {
+        switch (systemState) {
+            case TELEOP -> {
+                final ChassisSpeeds s = computeJoystickSpeeds();
+                joystickSpeeds = s;
+                driveFieldOriented(s);
+            }
+            case LOCK -> halt();
+        }
+    }
+
+    // ── Joystick computation (was JoystickDrive) ─────────────────────────────
+
+    private ChassisSpeeds computeJoystickSpeeds() {
+        final Translation2d t = translation();
+        return new ChassisSpeeds(
+            t.getX(),
+            t.getY(),
+            theta().in(Units.RadiansPerSecond)
+        );
+    }
+
+    private Translation2d translation() {
+        final double axial   = MathUtil.applyDeadband(axialSupplier.get(),   0.1);
+        final double lateral = MathUtil.applyDeadband(lateralSupplier.get(), 0.1);
+
+        final Rotation2d direction = Rotation2d.fromRadians(Math.atan2(lateral, axial));
+        final double magnitude = Math.pow(MathUtil.clamp(Math.hypot(axial, lateral), 0, 1), 2);
+
+        final double dx = Math.cos(direction.getRadians()) * magnitude;
+        final double dy = Math.sin(direction.getRadians()) * magnitude;
+
+        final LinearVelocity vx = Constants.Drivetrain.maxVelocity.times(dx);
+        final LinearVelocity vy = Constants.Drivetrain.maxVelocity.times(dy);
+
+        return new Translation2d(vx.in(Units.MetersPerSecond), vy.in(Units.MetersPerSecond));
+    }
+
+    private AngularVelocity theta() {
+        final double theta;
+
+        if ("Swerve Drive".equals(driveModeSupplier.get())) {
+            theta = -MathUtil.applyDeadband(forXSupplier.get(), 0.075);
+        } else {
+            // Field Oriented: right stick angle sets target heading, PID drives toward it.
+            final double rotX = forXSupplier.get();
+            final double rotY = forYSupplier.get();
+
+            forMagnitude = Math.hypot(rotX, rotY);
+            Logger.recordOutput("Drive/AbsoluteRotation/Magnitude", forMagnitude);
+
+            if (forMagnitude > 0.5) forTarget = Units.Radians.of(-Math.atan2(rotX, rotY));
+            Logger.recordOutput("Drive/AbsoluteRotation/Target", forTarget);
+
+            forMagnitude = forMagnitude * 0.5 + 0.5;
+
+            final double measurement = getPose().getRotation().getRotations();
+            final double setpoint    = forTarget.in(Units.Rotations);
+
+            theta = MathUtil.applyDeadband(
+                -(absoluteController.calculate(measurement, setpoint)),
+                0.075
+            );
+        }
+
+        return Constants.Drivetrain.maxAngularVelocity.times(theta * forMagnitude);
+    }
+
+    // ── Control methods (used directly by auto/vision commands) ──────────────
 
     public void driveFieldOriented(final ChassisSpeeds fieldRelativeSpeeds) {
         final ChassisSpeeds discretized = ChassisSpeeds.discretize(fieldRelativeSpeeds, 0.02);
@@ -92,7 +250,7 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
     }
 
     public void driveRobotOriented(final ChassisSpeeds robotRelativeSpeeds) {
-        final ChassisSpeeds inverted = robotRelativeSpeeds.unaryMinus();
+        final ChassisSpeeds inverted    = robotRelativeSpeeds.unaryMinus();
         final ChassisSpeeds discretized = ChassisSpeeds.discretize(inverted, 0.02);
         setControl(robotCentricRequest
             .withVelocityX(discretized.vxMetersPerSecond)

@@ -3,15 +3,17 @@ package frc.robot.oi;
 import java.util.function.Supplier;
 
 import edu.wpi.first.units.Units;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Robot;
+import frc.robot.RobotContainer;
 import frc.robot.Tuning;
 import frc.robot.Constants.Mode;
-import frc.robot.commands.drivetrain.LockWheels;
 import frc.robot.commands.drivetrain.TestDrive;
+import frc.robot.subsystems.drive.DriveGoal;
 import frc.robot.commands.shooter.IntakeGround;
 import frc.robot.commands.shooter.PrepareAmpShot;
 import frc.robot.commands.shooter.ShootAmp;
@@ -71,9 +73,16 @@ public class DriverOI extends BaseOI {
 			.onFalse(new FinishAmpShot().withTimeout(0.6));
 		this.intake.whileTrue(new IntakeGround(true));
 
-		this.lockWheels.onTrue(new InstantCommand(() -> Robot.cont.ledState = true))
-		.onFalse(new InstantCommand(() -> Robot.cont.ledState = false));
-	//	this.lockWheels.whileTrue(new LockWheels());
+		this.lockWheels
+			.onTrue(new InstantCommand(() -> {
+				RobotContainer.ledState = true;
+				this.hid.setRumble(RumbleType.kBothRumble, 0.25);
+			}))
+			.onFalse(new InstantCommand(() -> {
+				RobotContainer.ledState = false;
+				this.hid.setRumble(RumbleType.kBothRumble, 0);
+			}))
+			.whileTrue(Robot.cont.superstructure.setDriveIntentCommand(DriveGoal.LOCK));
 		this.resetFOD.onTrue(new InstantCommand(Robot.cont.drivetrain::resetAngle));
 
 		this.ferry.whileTrue(new ShootFixed(() -> Units.Degrees.of(Tuning.ferryAngle.get()), false, 0));

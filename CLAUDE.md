@@ -22,10 +22,7 @@ This codebase uses a centralized Superstructure that produces a **RobotGoal** ea
 
 3. **Safe defaults per subsystem.** Each subsystem has a default goal that represents "do nothing dangerous":
    - Drive → `TELEOP` (driver has control)
-   - Shooter → `HOME` (hood down, flywheels off)
-   - Intake → `STOP` (roller off, no motion)
-   - Indexer → `STOP`
-   - Hopper → `STOP`
+   - Shooter → `HOME` (pivot down, flywheels off, intake roller stopped — intake is part of the shooter subsystem)
    - Climber → `IDLE`
 
    The `RobotGoal.builder()` initializes all fields to these defaults. You only specify what needs to be *active*.
@@ -139,6 +136,15 @@ Commands.sequence(
 - DriverOI and OperatorOI set intents and push/pop overrides on the Superstructure.
 - They never reference subsystems directly except for read-only queries (e.g., LED state display).
 - Exception: operator nudges (tuning hood angle, flywheel speed) may go to the shooter directly since they modify calibration, not robot state.
+
+## Project Roadmap
+
+The refactor progress is tracked in `docs/project-roadmap.md`. When completing a phase or making a structural change (new subsystem, goal API change, architecture decision), update the roadmap's Quick Status table and the relevant phase section.
+
+Rules:
+- Mark a phase complete only after hardware testing is done, not just after the build passes
+- Add new Known Issues entries for anything deferred or requiring follow-up
+- Do not speculatively add new phases without user approval
 
 ## Documentation Maintenance
 
