@@ -12,8 +12,8 @@ public interface ShooterIO {
 		public Angle angle = Units.Radians.zero();
 		public AngularVelocity angleSpeed = Units.RadiansPerSecond.zero();
 		public boolean holdingNote;
-		public AngularVelocity flywheelSpeedA;
-		public AngularVelocity flywheelSpeedB;
+		public AngularVelocity flywheelSpeedA = Units.RadiansPerSecond.zero();
+		public AngularVelocity flywheelSpeedB = Units.RadiansPerSecond.zero();
 	}
 
 	public static enum Demand {

@@ -10,7 +10,7 @@ public class Shooter extends SubsystemBase {
 	public Shooter() {
 		this.io = switch(Constants.mode) {
 		case REAL -> new ShooterIOReal(this);
-		default -> throw new Error();
+		default -> new ShooterIO() {};
 		};
 	}
 

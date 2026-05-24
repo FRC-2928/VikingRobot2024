@@ -3,7 +3,11 @@
     "types": {
       "/FMSInfo": "FMSInfo",
       "/SmartDashboard/Auto Choices": "String Chooser",
-      "/SmartDashboard/Autonomous Routine": "String Chooser"
+      "/SmartDashboard/Autonomous Routine": "String Chooser",
+      "/SmartDashboard/Diagnostics/C-Stop": "Command",
+      "/SmartDashboard/Diagnostics/ZeroPivot": "Command",
+      "/SmartDashboard/Drive Mode": "String Chooser",
+      "/SmartDashboard/PIDController[2]": "PIDController"
     },
     "windows": {
       "/SmartDashboard/Autonomous Routine": {
@@ -38,6 +42,9 @@
     }
   },
   "NetworkTables Info": {
+    "Connections": {
+      "open": true
+    },
     "visible": true
   }
 }

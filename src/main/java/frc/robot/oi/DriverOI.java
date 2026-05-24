@@ -32,8 +32,8 @@ public class DriverOI extends BaseOI {
 			this.driveFORX = this.controller::getRightX;
 			this.driveFORY = () -> -this.controller.getRightY();
 		} else {
-			this.driveFORX = () -> this.hid.getRawAxis(2);
-			this.driveFORY = () -> this.hid.getRawAxis(3);
+			this.driveFORX = this.controller::getRightX;
+			this.driveFORY = () -> -this.controller.getRightY();
 		}
 		this.manualRotation = this.controller.rightStick();
 
