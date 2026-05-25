@@ -38,8 +38,8 @@ public class RobotContainer {
 
 		this.diag = new Diagnostics();
 		this.drivetrain = new DriveSubsystem();
-		this.superstructure = new Superstructure(this.drivetrain);
 		this.shooter = new Shooter();
+		this.superstructure = new Superstructure(this.drivetrain, this.shooter);
 		this.climber = new Climber();
 		this.fxm = new LimelightFXManager();
 

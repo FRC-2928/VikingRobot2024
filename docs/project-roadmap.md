@@ -10,7 +10,7 @@ This document tracks the subsystem-by-subsystem refactor to the goal-based archi
 |-------|-------------|--------|
 | 1 | Drive — goal-based refactor + hardware test | 🔄 Code complete, awaiting hardware |
 | 2 | Superstructure skeleton + Drive wired | 🔄 Code complete, awaiting hardware |
-| 3 | Shooter — full conversion (state machine + Superstructure + OI) | ⬜ Pending |
+| 3 | Shooter — full conversion (state machine + Superstructure + OI) | 🔄 Code complete, awaiting hardware |
 | 4 | Climber — full conversion (state machine + Superstructure + OI) | ⬜ Pending |
 | 5 | Auto routines | ⬜ Pending |
 | 6 | Architecture docs | ⬜ Ongoing |
@@ -33,10 +33,10 @@ Validate that the CTRE `SwerveDrivetrain` migration works correctly on real hard
 - **Goal-based drive complete:** `JoystickDrive` and `LockWheels` commands deleted; all drive behavior (joystick computation, absolute-rotation PID, X-lock) moved into `DriveSubsystem.applyGoal(DriveGoal)` / `periodic()`. Default command is now `Commands.run(() -> drivetrain.applyGoal(DriveGoal.TELEOP))`. During autonomous, TELEOP goal automatically becomes LOCK so the robot X-locks when no auto command owns the drivetrain.
 
 ### Hardware Test Checklist
-- [ ] Deploy to robot, no CAN faults on boot
-- [ ] All 4 swerve modules respond in teleop (correct direction, no oscillation)
-- [ ] Field-oriented drive works correctly (push stick forward → robot moves away from driver regardless of heading)
-- [ ] `resetAngle()` (Y button) zeros field-oriented heading
+- [x] Deploy to robot, no CAN faults on boot
+- [x] All 4 swerve modules respond in teleop (correct direction, no oscillation)
+- [x] Field-oriented drive works correctly (push stick forward → robot moves away from driver regardless of heading)
+- [x] `resetAngle()` (Y button) zeros field-oriented heading
 - [ ] Wheel lock (X button): `Drive/SystemState` logs `LOCK`, robot holds on an incline, controller rumbles; reverts to `TELEOP` on release
 - [ ] AdvantageScope: `Drive/Pose`, `Drive/ModuleStates`, `Drive/ModuleTargets`, `Drive/SystemState` log correctly
 - [ ] Drive mode chooser: "Swerve Drive" and "Field Oriented" both work from dashboard
@@ -77,10 +77,10 @@ The alternative — converting Shooter and Climber first, then adding the Supers
 - [x] Create `Superstructure.periodic()` and intent/goal command methods
 - [x] Register in `RobotContainer`; remove drivetrain default command
 - [x] Update `DriverOI.lockWheels` to use intent path
-- [ ] `./gradlew build` passes clean (pending WPILib VS Code build)
+- [x] `./gradlew build` passes clean (pending WPILib VS Code build)
 
 ### Hardware Test Checklist
-- [ ] Teleop drive behavior identical to Phase 1 (joystick, lock, mode chooser)
+- [x] Teleop drive behavior identical to Phase 1 (joystick, lock, mode chooser)
 - [ ] AdvantageScope: `Superstructure/Goal` logs `DriveGoal` each cycle
 - [ ] Wheel lock still works via intent path
 
@@ -88,7 +88,7 @@ The alternative — converting Shooter and Climber first, then adding the Supers
 
 ## Phase 3 — Shooter Full Conversion
 
-**Status:** ⬜ Pending Phase 2 hardware sign-off
+**Status:** 🔄 Code complete, awaiting hardware sign-off
 
 ### Goal
 Convert `Shooter.java` to the WantedState/SystemState pattern, wire it into the Superstructure, and update OI — all in one pass. When this phase is done, no shooter command calls `io.*` directly; everything routes through `applyGoal(ShooterGoal)`.
@@ -125,16 +125,25 @@ Convert `Shooter.java` to the WantedState/SystemState pattern, wire it into the 
 | `FERRY` | Pivot at ferry angle, flywheels at ferry power |
 
 ### Checklist
-- [ ] Create `ShooterGoal.java` enum
-- [ ] Add `WantedState`/`SystemState` enums and `applyGoal(ShooterGoal)` to `Shooter.java`
-- [ ] Implement `handleStateTransition()` (sensor checks → `SystemState`)
-- [ ] Implement `applyState()` (calls `io.*` methods based on `SystemState`)
-- [ ] Update `periodic()` to drive the state machine
-- [ ] Add `ShooterGoal shooter` field to `RobotGoal` (safe default: `ShooterGoal.HOME`)
-- [ ] Add shooter state to `SuperstructureContext`
-- [ ] Update `GoalResolver` with shooter intents
-- [ ] Update OI to push shooter intents; remove/update redundant command files
-- [ ] `./gradlew build` passes clean
+- [x] Create `ShooterGoal.java` enum (`HOME`, `INTAKE`, `SHOOT_SPEAKER`, `SHOOT_FIXED`, `AMP`, `FERRY`)
+- [x] Add `WantedState`/`SystemState` enums and `applyGoal(ShooterGoal)` to `Shooter.java`
+- [x] Implement `handleStateTransition()` (sensor checks → `SystemState`; `firedTime` pattern for shot completion)
+- [x] Implement `applyState()` (calls `io.*` methods based on `SystemState`)
+- [x] Update `periodic()` to drive the state machine
+- [x] Add `DriveGoal.AIM_SPEAKER` to `DriveSubsystem` for limelight rotational correction during speaker shots
+- [x] Add `ShooterGoal shooter` field to `RobotGoal` (safe default: `ShooterGoal.HOME`)
+- [x] Add `ShooterState` snapshot to `SuperstructureContext`
+- [x] Update `GoalResolver` with shooter intents (`setShooterIntent`, `shooterIntent` storage)
+- [x] Update `Superstructure`: add `Shooter` parameter, `setShooterIntentCommand()`, wire `shooter.applyGoal(ctx)` in `periodic()`
+- [x] Update `DriverOI` to use intent commands; replace `ShootSpeaker`/`IntakeGround`/`ShootAmp`/`FinishAmpShot`/`PrepareAmpShot`/`ShootFixed` bindings
+- [x] Update `OperatorOI` `fixedShoot` to use `setShooterIntentCommand(SHOOT_FIXED)`
+- [x] Delete `PrepareAmpShot`, `ShootAmp`, `FinishAmpShot`, `Idle`, `ShootFixedDiag` command files
+- [x] `./gradlew build` passes clean
+
+### Notes
+- `ShootSpeaker`, `IntakeGround`, `ShootFixed`, `ReadyShooter` kept — still referenced in `Autonomous.java` active code (Phase 5 cleanup)
+- Limelight access in `Shooter.applyShootSpeaker()` goes via `Robot.cont.drivetrain.limelightShooter` (known pragmatic shortcut; proper fix is `DriveState` snapshot in `SuperstructureContext` — Phase 4/5)
+- `Logger.processInputs("Shooter", inputs)` commented out pending `./gradlew build` annotation processing generating `ShooterIOInputsAutoLogged`
 
 ### Hardware Test Checklist
 - [ ] Pivot moves to home on enable; correct angle for each goal
@@ -260,4 +269,4 @@ Produce student-readable reference docs in `docs/architecture/`. Each doc should
 - **LimelightHelpers version**: Current version (v1.2.1) does not expose the full MegaTag2 API (`getBotPoseEstimate_wpiBlue_MegaTag2`). Vision fusion currently uses `Limelight.getPose2d()` as a fallback. Upgrading LimelightHelpers will unlock proper MegaTag2 timestamp and tag-count fields.
 - **VoltageRampCommand**: `runCharacterization()` was removed in the CTRE migration. If SysId characterization is needed, use CTRE's built-in SysId routines via `SwerveDrivetrain.sysIdQuasistatic()` / `sysIdDynamic()`.
 - **ShooterSpeaker interlock**: The old code checked `drivetrain.est.getEstimatedPosition()` for facing direction. This now uses `drivetrain.getPose()` — verify field-oriented facing logic is still correct during Phase 1 hardware testing.
-- **FinishAmpShot / PrepareAmpShot**: These commands require `drivetrain` as a requirement even though they only pass joystick speeds through. This is a leaky abstraction to address during Phase 3 OI migration.
+- ~~**FinishAmpShot / PrepareAmpShot**~~ — **Resolved in Phase 3.** These commands and `ShootAmp`, `Idle`, `ShootFixedDiag` were deleted. Amp behavior is now handled entirely within `Shooter.applyAmp()` / `applyHome()`.

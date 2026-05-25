@@ -7,6 +7,7 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -44,8 +45,8 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
 
     // ── Goal / state machine ──────────────────────────────────────────────────
 
-    enum WantedState { TELEOP, LOCK }
-    enum SystemState  { TELEOP, LOCK }
+    enum WantedState { TELEOP, LOCK, AIM_SPEAKER }
+    enum SystemState  { TELEOP, LOCK, AIM_SPEAKER }
 
     private WantedState wantedState = WantedState.TELEOP;
     private SystemState systemState = SystemState.TELEOP;
@@ -84,6 +85,10 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
 
     private static final Matrix<N3, N1> VISION_STD_DEVS =
         VecBuilder.fill(0.7, 0.7, 9999999);
+
+    // Feedforward used for limelight-based rotational correction during AIM_SPEAKER.
+    // kV=5 matches the original ShootSpeaker auto-align scaling; output is clamped to ±0.125 rad/s.
+    private static final SimpleMotorFeedforward aimFF = new SimpleMotorFeedforward(0, 5);
 
     // ── Limelights (used by shooter/intake commands) ─────────────────────────
 
@@ -139,9 +144,10 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
      */
     public void applyGoal(final SuperstructureContext ctx) {
         wantedState = switch (ctx.goal().drive()) {
-            case TELEOP     -> WantedState.TELEOP;
-            case LOCK       -> WantedState.LOCK;
-            case AUTONOMOUS -> WantedState.TELEOP; // auto commands drive via driveFieldOriented() directly
+            case TELEOP      -> WantedState.TELEOP;
+            case LOCK        -> WantedState.LOCK;
+            case AUTONOMOUS  -> WantedState.TELEOP; // auto commands drive via driveFieldOriented() directly
+            case AIM_SPEAKER -> WantedState.AIM_SPEAKER;
         };
     }
 
@@ -166,8 +172,9 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
     private SystemState handleStateTransition() {
         return switch (wantedState) {
             // During autonomous, fall back to X-lock when no auto command owns the drivetrain.
-            case TELEOP -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.TELEOP;
-            case LOCK   -> SystemState.LOCK;
+            case TELEOP      -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.TELEOP;
+            case LOCK        -> SystemState.LOCK;
+            case AIM_SPEAKER -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.AIM_SPEAKER;
         };
     }
 
@@ -178,8 +185,39 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
                 joystickSpeeds = s;
                 driveFieldOriented(s);
             }
-            case LOCK -> halt();
+            case LOCK        -> halt();
+            case AIM_SPEAKER -> applyAimSpeaker();
         }
+    }
+
+    /**
+     * Joystick translation with limelight-based rotational correction for speaker shots.
+     * Replicates the auto-align logic previously in ShootSpeaker.execute().
+     */
+    private void applyAimSpeaker() {
+        final boolean facingForward = getPose().getRotation().getCos() < 0;
+        final var t = translation();
+
+        final double rotCorrection;
+        if (facingForward && limelightShooter.hasValidTargets()) {
+            // limelight mounted sideways: vertical offset is the yaw error
+            final double yo = limelightShooter.getTargetVerticalOffset().in(Units.Rotations);
+            rotCorrection = MathUtil.clamp(aimFF.calculate(yo), -0.125, 0.125);
+        } else if (!facingForward && limelightRear.hasValidTargets()) {
+            final double ho = limelightRear.getTargetHorizontalOffset().in(Units.Rotations);
+            rotCorrection = aimFF.calculate(ho);
+        } else {
+            // No limelight target — fall back to joystick rotation
+            rotCorrection = -MathUtil.applyDeadband(forXSupplier.get(), 0.075);
+        }
+
+        final ChassisSpeeds s = new ChassisSpeeds(
+            t.getX(),
+            t.getY(),
+            Constants.Drivetrain.maxAngularVelocity.times(rotCorrection).in(Units.RadiansPerSecond)
+        );
+        joystickSpeeds = s;
+        driveFieldOriented(s);
     }
 
     // ── Joystick computation (was JoystickDrive) ─────────────────────────────

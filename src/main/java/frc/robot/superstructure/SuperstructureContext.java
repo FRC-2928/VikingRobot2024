@@ -1,12 +1,20 @@
 package frc.robot.superstructure;
 
+import frc.robot.subsystems.Shooter.ShooterState;
+
 /**
  * Immutable snapshot passed to every subsystem's {@code applyGoal()} each cycle.
  *
  * <p>Contains the current {@link RobotGoal} plus read-only state snapshots of all subsystems.
  * Subsystems use this to check interlocks against other subsystems without direct references.
  *
- * <p>Phase 2: only {@code goal} is present. Subsystem state fields will be added in Phase 3/4
- * as interlocks require them (e.g., {@code shooterState}, {@code climberState}).
+ * <p>Phase 3: {@code shooterState} added for Phase 4 climber interlock
+ * ({@code ctx.shooterState().atSafeAngle()}).
  */
-public record SuperstructureContext(RobotGoal goal) {}
+public record SuperstructureContext(RobotGoal goal, ShooterState shooterState) {
+
+    /** Convenience constructor for cycles where no shooter state is needed yet. */
+    public SuperstructureContext(RobotGoal goal) {
+        this(goal, new ShooterState(false, false, true));
+    }
+}

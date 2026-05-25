@@ -3,8 +3,10 @@ package frc.robot.superstructure;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.drive.DriveGoal;
 import frc.robot.subsystems.drive.DriveSubsystem;
+import frc.robot.subsystems.shooter.ShooterGoal;
 
 /**
  * Single authority for all subsystem goals during a match.
@@ -12,8 +14,7 @@ import frc.robot.subsystems.drive.DriveSubsystem;
  * <p>Every 20ms:
  * <ol>
  *   <li>{@link GoalResolver} reads stored intents + DriverStation state → {@link RobotGoal}</li>
- *   <li>A {@link SuperstructureContext} is built from the goal (+ subsystem state snapshots in
- *       later phases)</li>
+ *   <li>A {@link SuperstructureContext} is built from the goal + subsystem state snapshots</li>
  *   <li>Each subsystem receives {@code applyGoal(ctx)} — the only place subsystems are told what
  *       to do</li>
  * </ol>
@@ -25,10 +26,12 @@ import frc.robot.subsystems.drive.DriveSubsystem;
 public class Superstructure extends SubsystemBase {
 
     private final DriveSubsystem drivetrain;
+    private final Shooter shooter;
     private final GoalResolver resolver = new GoalResolver();
 
-    public Superstructure(DriveSubsystem drivetrain) {
+    public Superstructure(DriveSubsystem drivetrain, Shooter shooter) {
         this.drivetrain = drivetrain;
+        this.shooter = shooter;
     }
 
     // -------------------------------------------------------------------------
@@ -38,8 +41,9 @@ public class Superstructure extends SubsystemBase {
     @Override
     public void periodic() {
         RobotGoal goal = resolver.resolve();
-        SuperstructureContext ctx = new SuperstructureContext(goal);
+        SuperstructureContext ctx = new SuperstructureContext(goal, shooter.getState());
         drivetrain.applyGoal(ctx);
+        shooter.applyGoal(ctx);
     }
 
     // -------------------------------------------------------------------------
@@ -53,9 +57,19 @@ public class Superstructure extends SubsystemBase {
      * <p>Bind with {@code trigger.whileTrue(superstructure.setDriveIntentCommand(DriveGoal.LOCK))}.
      */
     public Command setDriveIntentCommand(DriveGoal intent) {
-        return Commands.startEnd(
-                () -> resolver.setDriveIntent(intent),
-                () -> resolver.setDriveIntent(DriveGoal.TELEOP));
+        return Commands.run(() -> resolver.setDriveIntent(intent))
+                .finallyDo(() -> resolver.setDriveIntent(DriveGoal.TELEOP));
+    }
+
+    /**
+     * Returns a command that pushes {@code intent} to the shooter subsystem while active, then
+     * reverts to the safe default ({@link ShooterGoal#HOME}) when interrupted or finished.
+     *
+     * <p>Bind with {@code trigger.whileTrue(superstructure.setShooterIntentCommand(ShooterGoal.INTAKE))}.
+     */
+    public Command setShooterIntentCommand(ShooterGoal intent) {
+        return Commands.run(() -> resolver.setShooterIntent(intent))
+                .finallyDo(() -> resolver.setShooterIntent(ShooterGoal.HOME));
     }
 
     // -------------------------------------------------------------------------

@@ -198,6 +198,7 @@ Rules:
 - Second line MUST be blank (separates subject from body)
 - All three sections ([Problem], [Solution], [Test]) are mandatory
 - [Test] must honestly reflect what was actually verified
+- Do not add a Co-Authored-By footer to commit messages
 
 ## Conventions
 

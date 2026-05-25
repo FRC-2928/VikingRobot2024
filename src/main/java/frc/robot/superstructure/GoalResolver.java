@@ -2,6 +2,7 @@ package frc.robot.superstructure;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.subsystems.drive.DriveGoal;
+import frc.robot.subsystems.shooter.ShooterGoal;
 
 /**
  * Maps OI intents to a concrete {@link RobotGoal} each cycle.
@@ -14,12 +15,14 @@ import frc.robot.subsystems.drive.DriveGoal;
  * </ul>
  *
  * <p>OI never calls this class directly. All intent pushes go through
- * {@link Superstructure#setDriveIntentCommand} and related methods.
+ * {@link Superstructure#setDriveIntentCommand}, {@link Superstructure#setShooterIntentCommand},
+ * and {@link Superstructure#setGoalCommand}.
  */
 public class GoalResolver {
 
     // Per-subsystem intent storage — default to safe values
-    private DriveGoal driveIntent = DriveGoal.TELEOP;
+    private DriveGoal   driveIntent   = DriveGoal.TELEOP;
+    private ShooterGoal shooterIntent = ShooterGoal.HOME;
 
     // -------------------------------------------------------------------------
     // Intent setters (called by Superstructure on behalf of OI)
@@ -29,12 +32,17 @@ public class GoalResolver {
         driveIntent = intent;
     }
 
+    public void setShooterIntent(ShooterGoal intent) {
+        shooterIntent = intent;
+    }
+
     /**
      * Overrides all intents to match the given goal. Used by auto routines via
      * {@link Superstructure#setGoalCommand}.
      */
     public void setGoal(RobotGoal goal) {
-        driveIntent = goal.drive();
+        driveIntent   = goal.drive();
+        shooterIntent = goal.shooter();
     }
 
     // -------------------------------------------------------------------------
@@ -48,9 +56,10 @@ public class GoalResolver {
      * so the path follower always has authority during auto.
      */
     public RobotGoal resolve() {
-        DriveGoal drive = DriverStation.isAutonomous() ? DriveGoal.AUTONOMOUS : driveIntent;
+        final DriveGoal drive = DriverStation.isAutonomous() ? DriveGoal.AUTONOMOUS : driveIntent;
         return RobotGoal.builder()
                 .withDrive(drive)
+                .withShooter(shooterIntent)
                 .build();
     }
 }

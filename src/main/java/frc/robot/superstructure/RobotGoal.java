@@ -1,6 +1,7 @@
 package frc.robot.superstructure;
 
 import frc.robot.subsystems.drive.DriveGoal;
+import frc.robot.subsystems.shooter.ShooterGoal;
 
 /**
  * Immutable snapshot of what every subsystem should be doing this cycle.
@@ -17,13 +18,13 @@ import frc.robot.subsystems.drive.DriveGoal;
  * <p>Derive from an existing goal via {@link #modify()}:
  *
  * <pre>
- * RobotGoal autoShoot = RobotGoal.shootAtHub()
+ * RobotGoal autoShoot = RobotGoal.shootSpeaker()
  *     .modify()
  *     .withDrive(DriveGoal.AUTONOMOUS)
  *     .build();
  * </pre>
  */
-public record RobotGoal(DriveGoal drive) {
+public record RobotGoal(DriveGoal drive, ShooterGoal shooter) {
 
     // -------------------------------------------------------------------------
     // Factory methods
@@ -34,7 +35,7 @@ public record RobotGoal(DriveGoal drive) {
         return builder().build();
     }
 
-    /** Wheels locked in X-formation. Used for defense or end-of-match. */
+    /** Wheels locked in X-formation. */
     public static RobotGoal lockWheels() {
         return builder().withDrive(DriveGoal.LOCK).build();
     }
@@ -42,6 +43,34 @@ public record RobotGoal(DriveGoal drive) {
     /** Path follower controls the drive. Used during auto routines. */
     public static RobotGoal autonomous() {
         return builder().withDrive(DriveGoal.AUTONOMOUS).build();
+    }
+
+    /** Aim at speaker with limelight rotation + spin up flywheels + fire when aligned. */
+    public static RobotGoal shootSpeaker() {
+        return builder()
+            .withDrive(DriveGoal.AIM_SPEAKER)
+            .withShooter(ShooterGoal.SHOOT_SPEAKER)
+            .build();
+    }
+
+    /** Shoot at fixed sub-station angle. Driver steers. */
+    public static RobotGoal shootFixed() {
+        return builder().withShooter(ShooterGoal.SHOOT_FIXED).build();
+    }
+
+    /** Intake note from ground. Driver steers. */
+    public static RobotGoal intake() {
+        return builder().withShooter(ShooterGoal.INTAKE).build();
+    }
+
+    /** Amp shot. Driver steers. */
+    public static RobotGoal amp() {
+        return builder().withShooter(ShooterGoal.AMP).build();
+    }
+
+    /** Ferry shot. Driver steers. */
+    public static RobotGoal ferry() {
+        return builder().withShooter(ShooterGoal.FERRY).build();
     }
 
     // -------------------------------------------------------------------------
@@ -59,13 +88,15 @@ public record RobotGoal(DriveGoal drive) {
     }
 
     public static class Builder {
-        // Safe defaults: subsystems idle, driver has control
-        private DriveGoal drive = DriveGoal.TELEOP;
+        // Safe defaults
+        private DriveGoal   drive   = DriveGoal.TELEOP;
+        private ShooterGoal shooter = ShooterGoal.HOME;
 
         private Builder() {}
 
         private Builder(RobotGoal base) {
-            this.drive = base.drive;
+            this.drive   = base.drive;
+            this.shooter = base.shooter;
         }
 
         public Builder withDrive(DriveGoal drive) {
@@ -73,8 +104,13 @@ public record RobotGoal(DriveGoal drive) {
             return this;
         }
 
+        public Builder withShooter(ShooterGoal shooter) {
+            this.shooter = shooter;
+            return this;
+        }
+
         public RobotGoal build() {
-            return new RobotGoal(drive);
+            return new RobotGoal(drive, shooter);
         }
     }
 }

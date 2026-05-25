@@ -2,7 +2,6 @@ package frc.robot.oi;
 
 import java.util.function.Supplier;
 
-import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -10,16 +9,10 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Robot;
 import frc.robot.RobotContainer;
-import frc.robot.Tuning;
 import frc.robot.Constants.Mode;
 import frc.robot.commands.drivetrain.TestDrive;
 import frc.robot.subsystems.drive.DriveGoal;
-import frc.robot.commands.shooter.IntakeGround;
-import frc.robot.commands.shooter.PrepareAmpShot;
-import frc.robot.commands.shooter.ShootAmp;
-import frc.robot.commands.shooter.FinishAmpShot;
-import frc.robot.commands.shooter.ShootFixed;
-import frc.robot.commands.shooter.ShootSpeaker;
+import frc.robot.subsystems.shooter.ShooterGoal;
 
 public class DriverOI extends BaseOI {
 	public DriverOI(final CommandXboxController controller) {
@@ -66,12 +59,11 @@ public class DriverOI extends BaseOI {
 	public final Trigger ferry;
 
 	public void configureControls() {
-		this.shootSpeaker.whileTrue(new ShootSpeaker(true));
-		this.shootAmp
-			.onTrue(new PrepareAmpShot().withTimeout(0.3))
-			.whileTrue(new ShootAmp())
-			.onFalse(new FinishAmpShot().withTimeout(0.6));
-		this.intake.whileTrue(new IntakeGround(true));
+		this.shootSpeaker.whileTrue(
+			Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.SHOOT_SPEAKER)
+				.alongWith(Robot.cont.superstructure.setDriveIntentCommand(DriveGoal.AIM_SPEAKER)));
+		this.shootAmp.whileTrue(Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.AMP));
+		this.intake.whileTrue(Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.INTAKE));
 
 		this.lockWheels
 			.onTrue(new InstantCommand(() -> {
@@ -85,7 +77,7 @@ public class DriverOI extends BaseOI {
 			.whileTrue(Robot.cont.superstructure.setDriveIntentCommand(DriveGoal.LOCK));
 		this.resetFOD.onTrue(new InstantCommand(Robot.cont.drivetrain::resetAngle));
 
-		this.ferry.whileTrue(new ShootFixed(() -> Units.Degrees.of(Tuning.ferryAngle.get()), false, 0));
+		this.ferry.whileTrue(Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.FERRY));
 
 		this.controller.a().whileTrue(new TestDrive());
 	}

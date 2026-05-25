@@ -1,16 +1,14 @@
 package frc.robot.oi;
 
-import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.Robot;
 import frc.robot.commands.climber.Initialize;
-import frc.robot.commands.shooter.ShootFixed;
 import frc.robot.subsystems.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterGoal;
 
 public class OperatorOI extends BaseOI {
 	public OperatorOI(final CommandXboxController controller) {
@@ -73,6 +71,6 @@ public class OperatorOI extends BaseOI {
 			() -> false
 		));
 
-		this.fixedShoot.whileTrue(new ShootFixed(false));
+		this.fixedShoot.whileTrue(Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.SHOOT_FIXED));
 	}
 }

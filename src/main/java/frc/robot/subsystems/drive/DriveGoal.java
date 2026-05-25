@@ -14,5 +14,8 @@ public enum DriveGoal {
     LOCK,
 
     /** Path follower (PathPlanner/BLine) controls the robot. Used during auto. */
-    AUTONOMOUS
+    AUTONOMOUS,
+
+    /** Joystick translation + limelight-based rotational correction for speaker shots. */
+    AIM_SPEAKER
 }
