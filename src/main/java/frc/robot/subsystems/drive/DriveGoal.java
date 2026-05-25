@@ -17,5 +17,8 @@ public enum DriveGoal {
     AUTONOMOUS,
 
     /** Joystick translation + limelight-based rotational correction for speaker shots. */
-    AIM_SPEAKER
+    AIM_SPEAKER,
+
+    /** Joystick translation + limelight-based additive correction toward the note on the ground. Driver retains full control. */
+    TRACK_NOTE
 }

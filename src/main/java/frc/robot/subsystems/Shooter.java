@@ -141,7 +141,7 @@ public class Shooter extends SubsystemBase {
 
     private void applyHome() {
         io.retractAmpBar();
-        io.rotate(inputs.holdingNote ? Constants.Shooter.readyDrive : Constants.Shooter.readyIntake);
+        io.rotate(inputs.holdingNote ? Constants.Shooter.readyDrive : Constants.Shooter.idleEmpty);
         io.runFlywheels(0);
         io.runFeeder(Demand.Halt);
         io.runIntake(Demand.Halt);

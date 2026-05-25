@@ -63,7 +63,9 @@ public class DriverOI extends BaseOI {
 			Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.SHOOT_SPEAKER)
 				.alongWith(Robot.cont.superstructure.setDriveIntentCommand(DriveGoal.AIM_SPEAKER)));
 		this.shootAmp.whileTrue(Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.AMP));
-		this.intake.whileTrue(Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.INTAKE));
+		this.intake.whileTrue(
+			Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.INTAKE)
+				.alongWith(Robot.cont.superstructure.setDriveIntentCommand(DriveGoal.TRACK_NOTE)));
 
 		this.lockWheels
 			.onTrue(new InstantCommand(() -> {

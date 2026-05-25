@@ -45,8 +45,8 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
 
     // ── Goal / state machine ──────────────────────────────────────────────────
 
-    enum WantedState { TELEOP, LOCK, AIM_SPEAKER }
-    enum SystemState  { TELEOP, LOCK, AIM_SPEAKER }
+    enum WantedState { TELEOP, LOCK, AIM_SPEAKER, TRACK_NOTE }
+    enum SystemState  { TELEOP, LOCK, AIM_SPEAKER, TRACK_NOTE }
 
     private WantedState wantedState = WantedState.TELEOP;
     private SystemState systemState = SystemState.TELEOP;
@@ -148,6 +148,7 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
             case LOCK        -> WantedState.LOCK;
             case AUTONOMOUS  -> WantedState.TELEOP; // auto commands drive via driveFieldOriented() directly
             case AIM_SPEAKER -> WantedState.AIM_SPEAKER;
+            case TRACK_NOTE  -> WantedState.TRACK_NOTE;
         };
     }
 
@@ -175,6 +176,7 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
             case TELEOP      -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.TELEOP;
             case LOCK        -> SystemState.LOCK;
             case AIM_SPEAKER -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.AIM_SPEAKER;
+            case TRACK_NOTE  -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.TRACK_NOTE;
         };
     }
 
@@ -187,6 +189,7 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
             }
             case LOCK        -> halt();
             case AIM_SPEAKER -> applyAimSpeaker();
+            case TRACK_NOTE  -> applyTrackNote();
         }
     }
 
@@ -218,6 +221,35 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
         );
         joystickSpeeds = s;
         driveFieldOriented(s);
+    }
+
+    /**
+     * Joystick translation with additive limelight-based correction toward the note.
+     * Driver retains full control — the correction is added on top of joystick input.
+     * Falls back to pure joystick when limelight has no valid target.
+     */
+    private void applyTrackNote() {
+        final ChassisSpeeds joystick = computeJoystickSpeeds();
+        joystickSpeeds = joystick;
+
+        if (!limelightNote.hasValidTargets()) {
+            driveFieldOriented(joystick);
+            return;
+        }
+
+        final double horizontalOffsetDeg = limelightNote.getTargetHorizontalOffset().in(Units.Degrees);
+        final double horizontalOffsetRot = limelightNote.getTargetHorizontalOffset().in(Units.Rotations);
+
+        // Robot-relative: X drives toward note, Y steers laterally to center it.
+        final ChassisSpeeds correction = rod(new ChassisSpeeds(
+            -10.0 / (Math.abs(horizontalOffsetDeg) + 1),
+            horizontalOffsetRot * 10,
+            0
+        ));
+
+        Logger.recordOutput("Drive/TrackNote/CorrectionX", correction.vxMetersPerSecond);
+        Logger.recordOutput("Drive/TrackNote/CorrectionY", correction.vyMetersPerSecond);
+        driveFieldOriented(joystick.plus(correction));
     }
 
     // ── Joystick computation (was JoystickDrive) ─────────────────────────────

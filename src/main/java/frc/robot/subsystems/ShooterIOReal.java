@@ -15,7 +15,9 @@ import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.controls.VelocityDutyCycle;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
@@ -73,9 +75,11 @@ public class ShooterIOReal implements ShooterIO {
 		this.flywheelA.setNeutralMode(NeutralModeValue.Coast);
 		// this.flywheelA.setInverted(false);
 
+		final MotorOutputConfigs flywheelBOutput = new MotorOutputConfigs();
+		flywheelBOutput.Inverted = InvertedValue.Clockwise_Positive;
 		this.flywheelB.getConfigurator().apply(flywheels);
+		this.flywheelB.getConfigurator().apply(flywheelBOutput);
 		this.flywheelB.setNeutralMode(NeutralModeValue.Coast);
-		// this.flywheelB.setInverted(true);
 		//this.flywheelB.setControl(new Follower(this.flywheelA.getDeviceID(), true));
 
 		this.feeder.setNeutralMode(NeutralMode.Brake);

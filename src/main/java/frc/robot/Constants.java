@@ -285,7 +285,7 @@ public class Constants {
 			.withGravityType(GravityTypeValue.Arm_Cosine)
 			.withKS(0.025)
 			.withKG(0.028)
-			.withKP(10)
+			.withKP(6.7)
 			.withKD(0.05);
 
 		public static final double pivotCurrentLimit = 40;
@@ -308,6 +308,8 @@ public class Constants {
 		public static final Angle readyIntake = Units.Rotations.of(-0.1085);
 		// min angle before hitting floor
 		public static final Angle intakeGround = Units.Rotations.of(-0.1085);
+		// hover position when empty and idle: just above ground to avoid catching, below readyDrive
+		public static final Angle idleEmpty = Units.Rotations.of(-0.07);
 
 		public static final Angle readyDrive = Units.Degrees.zero();
 		public static final Angle readyShootFront = Units.Rotations.of(0.122);

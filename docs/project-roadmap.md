@@ -8,9 +8,9 @@ This document tracks the subsystem-by-subsystem refactor to the goal-based archi
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Drive — goal-based refactor + hardware test | 🔄 Code complete, awaiting hardware |
-| 2 | Superstructure skeleton + Drive wired | 🔄 Code complete, awaiting hardware |
-| 3 | Shooter — full conversion (state machine + Superstructure + OI) | 🔄 Code complete, awaiting hardware |
+| 1 | Drive — goal-based refactor + hardware test | 🔄 Partial hardware testing done |
+| 2 | Superstructure skeleton + Drive wired | 🔄 Partial hardware testing done |
+| 3 | Shooter — full conversion (state machine + Superstructure + OI) | 🔄 Partial hardware testing done |
 | 4 | Climber — full conversion (state machine + Superstructure + OI) | ⬜ Pending |
 | 5 | Auto routines | ⬜ Pending |
 | 6 | Architecture docs | ⬜ Ongoing |
@@ -37,7 +37,7 @@ Validate that the CTRE `SwerveDrivetrain` migration works correctly on real hard
 - [x] All 4 swerve modules respond in teleop (correct direction, no oscillation)
 - [x] Field-oriented drive works correctly (push stick forward → robot moves away from driver regardless of heading)
 - [x] `resetAngle()` (Y button) zeros field-oriented heading
-- [ ] Wheel lock (X button): `Drive/SystemState` logs `LOCK`, robot holds on an incline, controller rumbles; reverts to `TELEOP` on release
+- [x] Wheel lock (X button): `Drive/SystemState` logs `LOCK`, robot holds on an incline, controller rumbles; reverts to `TELEOP` on release
 - [ ] AdvantageScope: `Drive/Pose`, `Drive/ModuleStates`, `Drive/ModuleTargets`, `Drive/SystemState` log correctly
 - [ ] Drive mode chooser: "Swerve Drive" and "Field Oriented" both work from dashboard
 - [ ] PathPlanner auto: robot follows a simple path from correct start pose
@@ -82,7 +82,7 @@ The alternative — converting Shooter and Climber first, then adding the Supers
 ### Hardware Test Checklist
 - [x] Teleop drive behavior identical to Phase 1 (joystick, lock, mode chooser)
 - [ ] AdvantageScope: `Superstructure/Goal` logs `DriveGoal` each cycle
-- [ ] Wheel lock still works via intent path
+- [x] Wheel lock still works via intent path
 
 ---
 
@@ -146,11 +146,13 @@ Convert `Shooter.java` to the WantedState/SystemState pattern, wire it into the 
 - `Logger.processInputs("Shooter", inputs)` commented out pending `./gradlew build` annotation processing generating `ShooterIOInputsAutoLogged`
 
 ### Hardware Test Checklist
-- [ ] Pivot moves to home on enable; correct angle for each goal
-- [ ] Flywheels spin up to correct velocity; feeder fires only when at speed
-- [ ] Amp bar extends/retracts correctly
+- [x] Pivot moves to correct angle for intake and amp goals; home on enable
+- [ ] Flywheels spin up to correct velocity; feeder fires only when at speed (not yet tested — no shoot goal tuned)
+- [x] Amp bar extends/retracts correctly; `ShooterGoal.AMP` functional
 - [ ] AdvantageScope: `Shooter/SystemState`, `Shooter/WantedState`, `Shooter/Angle`, `Shooter/FlywheelSpeed` log correctly
-- [ ] `IntakeGround` still updates `drivetrain.joystickSpeeds` correctly (vision correction path)
+- [x] Drive-to-note vision correction functional during `ShooterGoal.INTAKE` (via `DriveGoal.TRACK_NOTE`)
+- [ ] Ferry shot not yet tested
+- [ ] Shoot speaker not yet tested (pending shoot goal tuning)
 
 ---
 
