@@ -48,8 +48,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     // ── Goal / state machine ──────────────────────────────────────────────────
 
-    enum WantedState { TELEOP, LOCK, AIM_SPEAKER, TRACK_NOTE }
-    enum SystemState  { TELEOP, LOCK, AIM_SPEAKER, TRACK_NOTE }
+    enum WantedState { TELEOP, LOCK, AIM_SPEAKER, TRACK_NOTE, INTAKE_DRIVE }
+    enum SystemState  { TELEOP, LOCK, AIM_SPEAKER, TRACK_NOTE, INTAKE_DRIVE }
 
     private WantedState wantedState = WantedState.TELEOP;
     private SystemState systemState = SystemState.TELEOP;
@@ -75,6 +75,15 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     private final SwerveRequest.SwerveDriveBrake brakeRequest =
         new SwerveRequest.SwerveDriveBrake();
+
+    private final SwerveRequest.FieldCentricFacingAngle facingAngleRequest =
+        new SwerveRequest.FieldCentricFacingAngle()
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+            .withDesaturateWheelSpeeds(true)
+            .withHeadingPID(8.0, 0.0, 0.25);
+
+    // Last commanded heading for INTAKE_DRIVE — held when stick is released
+    private Rotation2d mSnapToHeading = Rotation2d.kZero;
 
     // ── Vision standard deviations ───────────────────────────────────────────
 
@@ -195,11 +204,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      */
     public void applyGoal(final SuperstructureContext ctx) {
         wantedState = switch (ctx.goal().drive()) {
-            case TELEOP      -> WantedState.TELEOP;
-            case LOCK        -> WantedState.LOCK;
-            case AUTONOMOUS  -> WantedState.TELEOP;
-            case AIM_SPEAKER -> WantedState.AIM_SPEAKER;
-            case TRACK_NOTE  -> WantedState.TRACK_NOTE;
+            case TELEOP       -> WantedState.TELEOP;
+            case LOCK         -> WantedState.LOCK;
+            case AUTONOMOUS   -> WantedState.TELEOP;
+            case AIM_SPEAKER  -> WantedState.AIM_SPEAKER;
+            case TRACK_NOTE   -> WantedState.TRACK_NOTE;
+            case INTAKE_DRIVE -> WantedState.INTAKE_DRIVE;
         };
     }
 
@@ -235,10 +245,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     private SystemState handleStateTransition() {
         return switch (wantedState) {
-            case TELEOP      -> SystemState.TELEOP;
-            case LOCK        -> SystemState.LOCK;
-            case AIM_SPEAKER -> SystemState.AIM_SPEAKER;
-            case TRACK_NOTE  -> SystemState.TRACK_NOTE;
+            case TELEOP       -> SystemState.TELEOP;
+            case LOCK         -> SystemState.LOCK;
+            case AIM_SPEAKER  -> SystemState.AIM_SPEAKER;
+            case TRACK_NOTE   -> SystemState.TRACK_NOTE;
+            case INTAKE_DRIVE -> SystemState.INTAKE_DRIVE;
         };
     }
 
@@ -249,9 +260,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 joystickSpeeds = s;
                 driveFieldOriented(s);
             }
-            case LOCK        -> halt();
-            case AIM_SPEAKER -> applyAimSpeaker();
-            case TRACK_NOTE  -> applyTrackNote();
+            case LOCK         -> halt();
+            case AIM_SPEAKER  -> applyAimSpeaker();
+            case TRACK_NOTE   -> applyTrackNote();
+            case INTAKE_DRIVE -> applyIntakeDrive();
         }
     }
 
@@ -305,6 +317,34 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         Logger.recordOutput("Drive/TrackNote/CorrectionX", correction.vxMetersPerSecond);
         Logger.recordOutput("Drive/TrackNote/CorrectionY", correction.vyMetersPerSecond);
         driveFieldOriented(joystick.plus(correction));
+    }
+
+    // ── INTAKE_DRIVE ─────────────────────────────────────────────────────────
+
+    private void applyIntakeDrive() {
+        final double maxSpeed = Constants.Drivetrain.maxVelocity.in(Units.MetersPerSecond);
+        final ChassisSpeeds joystick = computeJoystickSpeeds();
+        joystickSpeeds = joystick;
+
+        double vx = joystick.vxMetersPerSecond;
+        double vy = joystick.vyMetersPerSecond;
+        double translationMagnitude = Math.hypot(vx, vy);
+
+        // Only update heading when the driver is commanding meaningful translation.
+        // This prevents the robot from spinning when the stick is released.
+        if (translationMagnitude > maxSpeed * TRANSLATION_DEADBAND) {
+            mSnapToHeading = new Rotation2d(Math.atan2(vy, vx));
+        }
+
+        Logger.recordOutput("Drive/IntakeDrive/SnapToHeading", mSnapToHeading);
+        Logger.recordOutput("Drive/IntakeDrive/TranslationMagnitude", translationMagnitude);
+
+        // Both vx/vy and targetDirection are in driver-relative frame.
+        // FieldCentricFacingAngle applies operator perspective to both consistently.
+        setControl(facingAngleRequest
+            .withVelocityX(vx)
+            .withVelocityY(vy)
+            .withTargetDirection(mSnapToHeading));
     }
 
     // ── Joystick computation ─────────────────────────────────────────────────

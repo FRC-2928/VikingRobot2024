@@ -20,5 +20,8 @@ public enum DriveGoal {
     AIM_SPEAKER,
 
     /** Joystick translation + limelight-based additive correction toward the note on the ground. Driver retains full control. */
-    TRACK_NOTE
+    TRACK_NOTE,
+
+    /** Joystick translation with automatic rotation to face the direction of travel. Used during intake. */
+    INTAKE_DRIVE
 }
