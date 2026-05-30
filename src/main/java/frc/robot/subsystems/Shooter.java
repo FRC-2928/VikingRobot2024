@@ -75,6 +75,12 @@ public class Shooter extends SubsystemBase {
         SmartDashboard.putData("Shooter/PitchPID", pitchPID);
     }
 
+    // ── Signal registration ─────────────────────────────────────────────────
+
+    public com.ctre.phoenix6.BaseStatusSignal[] getStatusSignals() {
+        return io.getStatusSignals();
+    }
+
     // ── Goal API ──────────────────────────────────────────────────────────────
 
     /**

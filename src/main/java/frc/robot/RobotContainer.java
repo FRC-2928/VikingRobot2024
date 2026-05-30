@@ -39,11 +39,22 @@ public class RobotContainer {
 		Tuning.flywheelVelocity.get(); // load the class to put the tuning controls on the dashboard
 
 		this.diag = new Diagnostics();
+
+		// Superstructure MUST be constructed before subsystems. WPILib's CommandScheduler
+		// calls periodic() in registration order, and Superstructure must run first to
+		// batch-refresh CAN signals and resolve goals before subsystems read their inputs.
+		//
+		// Future: Superstructure should own subsystem construction internally and drive
+		// their periodic() calls explicitly, removing the scheduler ordering dependency.
+		// That refactor is blocked on eliminating Robot.cont (task 10).
+		this.superstructure = new Superstructure();
 		this.drivetrain = new CommandSwerveDrivetrain();
 		this.shooter = new Shooter();
-		this.superstructure = new Superstructure(this.drivetrain, this.shooter);
+		this.superstructure.setSubsystems(this.drivetrain, this.shooter);
 		this.climber = new Climber();
 		this.fxm = new LimelightFXManager();
+
+		this.superstructure.registerSignals(this.shooter, this.shooter.getStatusSignals());
 
 		this.diag.chirp(600, 500);
 		this.diag.chirp(900, 500);

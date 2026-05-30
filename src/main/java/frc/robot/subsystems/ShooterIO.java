@@ -2,11 +2,15 @@ package frc.robot.subsystems;
 
 import org.littletonrobotics.junction.AutoLog;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+
 import edu.wpi.first.units.measure.*;
 
 import edu.wpi.first.units.Units;
 
 public interface ShooterIO {
+
+	default BaseStatusSignal[] getStatusSignals() { return new BaseStatusSignal[0]; }
 	@AutoLog
 	public static class ShooterIOInputs {
 		public Angle angle = Units.Radians.zero();

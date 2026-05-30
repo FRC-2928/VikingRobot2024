@@ -182,6 +182,11 @@ public class ShooterIOReal implements ShooterIO {
 	public final SysIdRoutine sysIdPivot;
 
 	@Override
+	public BaseStatusSignal[] getStatusSignals() {
+		return new BaseStatusSignal[] { angle, angleSpeed, velocityA, velocityB };
+	}
+
+	@Override
 	public void rotate(final Angle target) {
 		final Angle rot = Units.Radians
 			.of(
@@ -240,8 +245,6 @@ public class ShooterIOReal implements ShooterIO {
 
 	@Override
 	public void updateInputs(final ShooterIOInputs inputs) {
-		BaseStatusSignal.refreshAll(this.angle, this.velocityA);
-
 		inputs.angle = Units.Rotations.of(this.angle.getValueAsDouble());
 		inputs.angleSpeed = Units.RotationsPerSecond.of(this.angleSpeed.getValueAsDouble());
 		inputs.flywheelSpeedA = Units.RotationsPerSecond.of(this.velocityA.getValueAsDouble());
