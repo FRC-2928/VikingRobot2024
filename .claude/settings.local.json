@@ -4,7 +4,10 @@
       "WebFetch(domain:v6.docs.ctr-electronics.com)",
       "WebFetch(domain:api.ctr-electronics.com)",
       "Bash(./gradlew build:*)",
-      "Bash(./gradlew --stop)"
+      "Bash(./gradlew --stop)",
+      "WebFetch(domain:github.com)",
+      "Bash(grep -E \"\\\\.java$\")",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

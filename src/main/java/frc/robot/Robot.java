@@ -10,6 +10,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 import org.opencv.core.Mat;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
@@ -80,9 +81,32 @@ public class Robot extends LoggedRobot {
 
 	// AUTONOMOUS //
 
+	private void resetPoseFromLimelight() {
+		var rear = this.container.drivetrain.limelightRear;
+		if (rear.hasValidTargets()) {
+			Pose2d pose = rear.getPose2d();
+			// Guard against all-zero default returned when no tags are actually resolved
+			if (pose.getTranslation().getNorm() > 0.5) {
+				this.container.drivetrain.resetPose(pose);
+				Logger.recordOutput("Robot/OnEnable/Source", "Limelight-Rear");
+				return;
+			}
+		}
+		Logger.recordOutput("Robot/OnEnable/Source", "None");
+	}
+
 	@Override
 	public void autonomousInit() {
 		CommandScheduler.getInstance().cancelAll();
+
+		if (DriverStation.isFMSAttached()) {
+			this.container.getAutoStartPose().ifPresent(pose ->
+				this.container.drivetrain.resetPose(Autonomous.getPoseForAlliance(pose))
+			);
+			Logger.recordOutput("Robot/OnEnable/Source", "FMS-AutoStart");
+		} else {
+			resetPoseFromLimelight();
+		}
 
 		this.container.shooter.io.retractAmpBar();
 
@@ -135,6 +159,9 @@ public class Robot extends LoggedRobot {
 	@Override
 	public void teleopInit() {
 		CommandScheduler.getInstance().cancelAll();
+		if (!DriverStation.isFMSAttached()) {
+			resetPoseFromLimelight();
+		}
 	}
 
 	@Override

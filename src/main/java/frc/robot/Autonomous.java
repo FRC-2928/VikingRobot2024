@@ -26,8 +26,11 @@ import frc.robot.commands.shooter.*;
 import frc.robot.commands.drivetrain.VoltageRampCommand;
 
 public final class Autonomous {
-	public static SendableChooser<Command> createAutonomousChooser() {
-		final SendableChooser<Command> chooser = new SendableChooser<>();
+	/** Pairs an auto routine command with its blue-alliance starting pose. Use {@code new Pose2d()} when no starting pose is defined. */
+	public record AutoOption(Command command, Pose2d startPose) {}
+
+	public static SendableChooser<AutoOption> createAutonomousChooser() {
+		final SendableChooser<AutoOption> chooser = new SendableChooser<>();
 
 		// TODO: Choreo 2026 (library and app) cannot read the old .chor and .traj files
 		// We need to create a new 2026 file, build desired paths, and export to the right folder
@@ -93,25 +96,31 @@ public final class Autonomous {
 		chooser
 			.addOption(
 				"[comp] Drive",
-				new SequentialCommandGroup(new ReadyShooter(Constants.Shooter.readyShootRear, true), new DriveTime(1))
+				new AutoOption(new SequentialCommandGroup(new ReadyShooter(Constants.Shooter.readyShootRear, true), new DriveTime(1)), new Pose2d())
 			);
 
 		chooser
 			.addOption(
 				"[comp] Shoot/Drive",
-				new SequentialCommandGroup(
-					new ReadyShooter(Constants.Shooter.readyShootRear, true),
-					new ShootSpeaker(false, 2),
-					new DriveTime(1)
+				new AutoOption(
+					new SequentialCommandGroup(
+						new ReadyShooter(Constants.Shooter.readyShootRear, true),
+						new ShootSpeaker(false, 2),
+						new DriveTime(1)
+					),
+					new Pose2d()
 				)
 			);
 
 		chooser
 			.addOption(
 				"[comp] Shoot",
-				new SequentialCommandGroup(
-					new ReadyShooter(Constants.Shooter.readyShootRear, true),
-					new ShootSpeaker(false, 2)
+				new AutoOption(
+					new SequentialCommandGroup(
+						new ReadyShooter(Constants.Shooter.readyShootRear, true),
+						new ShootSpeaker(false, 2)
+					),
+					new Pose2d()
 				)
 			);
 
@@ -240,10 +249,13 @@ public final class Autonomous {
 		chooser
 			.addOption(
 				"[comp] Two Note",
-				new SequentialCommandGroup(
-					new ShootFixed(false, 2),
-					new IntakeGround(true).withTimeout(1.5),
-					new ShootSpeaker(false, 2)
+				new AutoOption(
+					new SequentialCommandGroup(
+						new ShootFixed(false, 2),
+						new IntakeGround(true).withTimeout(1.5),
+						new ShootSpeaker(false, 2)
+					),
+					new Pose2d()
 				)
 			);
 
@@ -258,7 +270,7 @@ public final class Autonomous {
 		// 			new IntakeGround(true).withTimeout(2)
 		// 		)
 		// 	);
-		chooser.addOption("[testing] Intake Only", new SequentialCommandGroup(new IntakeGround(true).withTimeout(2)));
+		chooser.addOption("[testing] Intake Only", new AutoOption(new SequentialCommandGroup(new IntakeGround(true).withTimeout(2)), new Pose2d()));
 		// chooser
 		// 	.addOption(
 		// 		"[testing] forward only",
@@ -277,10 +289,13 @@ public final class Autonomous {
 		// 		)
 		// 	);
 		chooser.addOption(
-			"[testing] LookForNote", 
-			new SequentialCommandGroup(
-				new LookForNote(Units.Radians.of(Math.PI/4)),
-				(Robot.cont.drivetrain.limelightNote.hasValidTargets() ?  new IntakeGround(true).withTimeout(4) : new LookForNote(Units.Radians.of(-Math.PI/2)))
+			"[testing] LookForNote",
+			new AutoOption(
+				new SequentialCommandGroup(
+					new LookForNote(Units.Radians.of(Math.PI/4)),
+					(Robot.cont.drivetrain.limelightNote.hasValidTargets() ?  new IntakeGround(true).withTimeout(4) : new LookForNote(Units.Radians.of(-Math.PI/2)))
+				),
+				new Pose2d()
 			)
 		);
 		// chooser
@@ -296,7 +311,7 @@ public final class Autonomous {
 		// 			Autonomous.dynamic("forwardBack.2")
 		// 		)
 		// 	);
-		chooser.addOption("[testing] voltage ramp", new VoltageRampCommand());
+		chooser.addOption("[testing] voltage ramp", new AutoOption(new VoltageRampCommand(), new Pose2d()));
 		return chooser;
 	}
 
@@ -388,7 +403,7 @@ public final class Autonomous {
 	/*
 	 * Returns the original or mirrored pose depending on alliance color (since the field is flipped)
 	 */
-	private static Pose2d getPoseForAlliance(final Pose2d initialPose) {
+	static Pose2d getPoseForAlliance(final Pose2d initialPose) {
 		if(DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue) == DriverStation.Alliance.Red) {
 			return new Pose2d(
 				initialPose.getX(),
