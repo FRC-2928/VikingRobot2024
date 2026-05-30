@@ -316,16 +316,18 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         final double maxSpeed = Constants.Drivetrain.maxVelocity.in(Units.MetersPerSecond);
         final double maxOmega = Constants.Drivetrain.maxAngularVelocity.in(Units.RadiansPerSecond);
 
-        // Deadband raw inputs
-        double axial   = MathUtil.applyDeadband(axialSupplier.get(), TRANSLATION_DEADBAND);
-        double lateral = MathUtil.applyDeadband(lateralSupplier.get(), TRANSLATION_DEADBAND);
+        // Negate to convert from joystick convention to FRC convention:
+        //   Joystick leftY positive = pull back; FRC +X = forward
+        //   Joystick leftX positive = push right; FRC +Y = left
+        double xMagnitude = MathUtil.applyDeadband(-axialSupplier.get(), TRANSLATION_DEADBAND);
+        double yMagnitude = MathUtil.applyDeadband(-lateralSupplier.get(), TRANSLATION_DEADBAND);
         double rotation = MathUtil.applyDeadband(-rotationSupplier.get(), ROTATION_DEADBAND);
 
         // Clamp to unit circle so diagonal doesn't exceed max speed
-        double translationMagnitude = Math.hypot(axial, lateral);
+        double translationMagnitude = Math.hypot(xMagnitude, yMagnitude);
         if (translationMagnitude > 1.0) {
-            axial /= translationMagnitude;
-            lateral /= translationMagnitude;
+            xMagnitude /= translationMagnitude;
+            yMagnitude /= translationMagnitude;
             translationMagnitude = 1.0;
         }
 
@@ -333,8 +335,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         double scaledMagnitude = translationMagnitude * translationMagnitude;
         double scale = (translationMagnitude > 0) ? scaledMagnitude / translationMagnitude : 0;
 
-        double vx = axial * scale * maxSpeed;
-        double vy = lateral * scale * maxSpeed;
+        double vx = xMagnitude * scale * maxSpeed;
+        double vy = yMagnitude * scale * maxSpeed;
 
         // Square rotation for sensitivity
         double omega = Math.copySign(rotation * rotation, rotation) * maxOmega;

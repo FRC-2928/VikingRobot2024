@@ -1,0 +1,19 @@
+# Build outputs
+build/
+.gradle/
+
+# IDE settings (machine-specific)
+.settings/
+.classpath
+.project
+bin/
+.idea/
+*.iml
+
+# Simulation artifacts
+ctre_sim/
+logs/
+*-window.json
+
+# Vendordeps JARs (large, not useful for context)
+vendordeps/*.json
