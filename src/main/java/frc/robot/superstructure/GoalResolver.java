@@ -9,14 +9,13 @@ import frc.robot.subsystems.shooter.ShooterGoal;
  *
  * <p>This class plays two roles described in CLAUDE.md:
  * <ul>
- *   <li><b>IntentStore</b> — stores per-subsystem intents pushed by OI via the Superstructure.</li>
+ *   <li><b>IntentStore</b> — stores per-subsystem intents set directly by OI triggers.</li>
  *   <li><b>GoalResolver</b> — combines stored intents with DriverStation state to produce the
  *       final {@link RobotGoal} for the cycle.</li>
  * </ul>
  *
- * <p>OI never calls this class directly. All intent pushes go through
- * {@link Superstructure#setDriveIntentCommand}, {@link Superstructure#setShooterIntentCommand},
- * and {@link Superstructure#setGoalCommand}.
+ * <p>OI triggers set intents directly via {@link #setDriveIntent} / {@link #setShooterIntent}.
+ * Auto routines use {@link #setGoal} to override all intents at once.
  */
 public class GoalResolver {
 

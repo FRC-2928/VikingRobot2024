@@ -4,9 +4,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.Shooter;
-import frc.robot.subsystems.drive.DriveGoal;
-import frc.robot.subsystems.drive.DriveSubsystem;
-import frc.robot.subsystems.shooter.ShooterGoal;
+import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 
 /**
  * Single authority for all subsystem goals during a match.
@@ -19,17 +17,16 @@ import frc.robot.subsystems.shooter.ShooterGoal;
  *       to do</li>
  * </ol>
  *
- * <p>OI classes interact with the Superstructure via intent commands (e.g.,
- * {@link #setDriveIntentCommand}). Auto routines use {@link #setGoalCommand}.
- * Neither OI nor auto routines ever call subsystems directly.
+ * <p>OI triggers set intents directly on the {@link #resolver}. Auto routines use
+ * {@link #setGoalCommand}. Neither OI nor auto routines ever call subsystems directly.
  */
 public class Superstructure extends SubsystemBase {
 
-    private final DriveSubsystem drivetrain;
+    private final CommandSwerveDrivetrain drivetrain;
     private final Shooter shooter;
-    private final GoalResolver resolver = new GoalResolver();
+    public final GoalResolver resolver = new GoalResolver();
 
-    public Superstructure(DriveSubsystem drivetrain, Shooter shooter) {
+    public Superstructure(CommandSwerveDrivetrain drivetrain, Shooter shooter) {
         this.drivetrain = drivetrain;
         this.shooter = shooter;
     }
@@ -44,32 +41,6 @@ public class Superstructure extends SubsystemBase {
         SuperstructureContext ctx = new SuperstructureContext(goal, shooter.getState());
         drivetrain.applyGoal(ctx);
         shooter.applyGoal(ctx);
-    }
-
-    // -------------------------------------------------------------------------
-    // OI intent commands
-    // -------------------------------------------------------------------------
-
-    /**
-     * Returns a command that pushes {@code intent} to the drive subsystem while active, then
-     * reverts to the default ({@link DriveGoal#TELEOP}) when interrupted or finished.
-     *
-     * <p>Bind with {@code trigger.whileTrue(superstructure.setDriveIntentCommand(DriveGoal.LOCK))}.
-     */
-    public Command setDriveIntentCommand(DriveGoal intent) {
-        return Commands.run(() -> resolver.setDriveIntent(intent))
-                .finallyDo(() -> resolver.setDriveIntent(DriveGoal.TELEOP));
-    }
-
-    /**
-     * Returns a command that pushes {@code intent} to the shooter subsystem while active, then
-     * reverts to the safe default ({@link ShooterGoal#HOME}) when interrupted or finished.
-     *
-     * <p>Bind with {@code trigger.whileTrue(superstructure.setShooterIntentCommand(ShooterGoal.INTAKE))}.
-     */
-    public Command setShooterIntentCommand(ShooterGoal intent) {
-        return Commands.run(() -> resolver.setShooterIntent(intent))
-                .finallyDo(() -> resolver.setShooterIntent(ShooterGoal.HOME));
     }
 
     // -------------------------------------------------------------------------

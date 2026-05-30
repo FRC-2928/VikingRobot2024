@@ -104,19 +104,19 @@ public class ShootSpeaker extends Command {
 
 			if(shooterLLSees) {
 				// pitch offset -- we use horizontal offset because the limelight is mounted sideways
-				final Angle po = Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset();
+				final Angle pitchOffset = Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset();
 				// yaw offset -- using vertical offset because the limelight is mounted sideways
-				final Angle yo = Robot.cont.drivetrain.limelightShooter
+				final Angle yawOffset = Robot.cont.drivetrain.limelightShooter
 					.getTargetVerticalOffset()
 					.times(isShooterForward ? 1 : -1);
 
-				Logger.recordOutput("Shooter/ShootSpeaker/tx", po.in(Units.Degrees));
-				Logger.recordOutput("Shooter/ShootSpeaker/ty", yo.in(Units.Degrees));
+				Logger.recordOutput("Shooter/ShootSpeaker/tx", pitchOffset.in(Units.Degrees));
+				Logger.recordOutput("Shooter/ShootSpeaker/ty", yawOffset.in(Units.Degrees));
 
 				Logger
 					.recordOutput(
 						"Shooter/ShootSpeaker/ShooterAlign",
-						this.targetRotationFeedforward.calculate(yo.in(Units.Rotations))
+						this.targetRotationFeedforward.calculate(yawOffset.in(Units.Rotations))
 					);
 
 				// The intent of this next series of calls is to help align the robot for a shot on goal, the logic is:
@@ -124,7 +124,7 @@ public class ShootSpeaker extends Command {
 				//	  it's also worth noting this is a bunch of leaky abstractions...
 				// 2. remove the rotational components from the obtained joystickSpeeds
 				// 3. using the yaw offset, compute a feedforward output (clamped to 0.125 speed) and make a new ChassisSpeeds with it
-				// 3a. Pass the rotation-only ChassisSpeeds to Drivetrain's rod method to transform it into field-relative speeds
+				// 3a. Pass the rotation-only ChassisSpeeds to Drivetrain's robotToField method to transform it into field-relative speeds
 				// 4. Combine the translation-only and rotation-only speeds into a single ChassisSpeeds object
 				// 5. Finally, pass the combined ChassisSpeeds to the drivetrain for control
 				Robot.cont.drivetrain
@@ -133,13 +133,13 @@ public class ShootSpeaker extends Command {
 							.norot(Robot.cont.drivetrain.joystickSpeeds)
 							.plus(
 								Robot.cont.drivetrain
-									.rod(
+									.robotToField(
 										new ChassisSpeeds(
 											0,
 											0,
 											MathUtil
 												.clamp(
-													this.targetRotationFeedforward.calculate(yo.in(Units.Rotations)),
+													this.targetRotationFeedforward.calculate(yawOffset.in(Units.Rotations)),
 													-0.125,
 													0.125
 												)
@@ -148,13 +148,9 @@ public class ShootSpeaker extends Command {
 							)
 					);
 
-				boolean isPivotPosThersholdMet = (Math.abs(po.in(Units.Degrees)) >= Tuning.shootSpeakerPivotThreshold.get());
+				boolean isPivotPosThresholdMet = (Math.abs(pitchOffset.in(Units.Degrees)) >= Tuning.shootSpeakerPivotThreshold.get());
 				boolean hasShooterFired = (this.firedTime == -1 ? false : true);
-				// assuming this is "have we moved enough to start aiming"...
-				// this is _likely_ why the override isn't working -- this condition is checked before the override is considered
-				// we should probably move the override logic to an initial state check...
-				if(isPivotPosThersholdMet && !hasShooterFired) {
-					// rotate (presumably, set the shooter setpoint) to the current angle + the calculated pitch-based ff
+				if(isPivotPosThresholdMet && !hasShooterFired) {
 					Robot.cont.shooter.io
 						.rotate(
 							Units.Rotations
@@ -162,25 +158,18 @@ public class ShootSpeaker extends Command {
 									Robot.cont.shooter.inputs.angle.in(Units.Rotations)
 										+ ShootSpeaker.pitch
 											.calculate(
-												this.pow(po.in(Units.Rotations), Tuning.shootSpeakerExponent.get())
+												this.pow(pitchOffset.in(Units.Rotations), Tuning.shootSpeakerExponent.get())
 											)
 								)
 						);
 				} else {
-					// if the flywheel is at speed, the pivot is in position, and the yaw offset is in range...
-					// OR... shoot override is requested...
-					// AND... demandFire...
-					// OR... we simply haven't fired yet..
 					if(
-						(((flywheelAtSpeed && pivotVelocityWithinThreshold && yo.in(Units.Degrees) < 10) || overrideShoot) && demandFire)
+						(((flywheelAtSpeed && pivotVelocityWithinThreshold && yawOffset.in(Units.Degrees) < 10) || overrideShoot) && demandFire)
 							|| this.firedTime != -1
 					) {
-						// run the feeder and set the fired time to now
 						Robot.cont.shooter.io.runFeeder(Demand.Forward);
 						if(this.firedTime == -1) this.firedTime = Timer.getFPGATimestamp();
 					}
-
-					//Robot.cont.shooter.io.rotate(Units.Rotations.of(Robot.cont.shooter.inputs.angle.in(Units.Rotations)));
 				}
 			} else if(!facingForward) {
 				Logger
@@ -205,7 +194,7 @@ public class ShootSpeaker extends Command {
 							.norot(Robot.cont.drivetrain.joystickSpeeds)
 							.plus(
 								Robot.cont.drivetrain
-									.rod(
+									.robotToField(
 										new ChassisSpeeds(
 											0,
 											0,

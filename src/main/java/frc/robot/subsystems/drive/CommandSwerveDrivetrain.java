@@ -1,15 +1,19 @@
 package frc.robot.subsystems.drive;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
-import com.ctre.phoenix6.swerve.SwerveRequest;
+import org.littletonrobotics.junction.Logger;
+
+import com.ctre.phoenix6.SignalLogger;
+import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -17,31 +21,32 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Notifier;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Subsystem;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 
-import org.littletonrobotics.junction.Logger;
+import static edu.wpi.first.units.Units.*;
 
 import frc.robot.Constants;
-import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.drive.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.superstructure.SuperstructureContext;
 import frc.robot.vision.Limelight;
 
 /**
- * Swerve drivetrain subsystem backed by CTRE's CommandSwerveDrivetrain.
+ * Swerve drivetrain subsystem.
  *
  * Owns all drive behavior via the goal-based pattern:
  *   applyGoal(SuperstructureContext) → wantedState → periodic() → hardware
  *
- * Callers set a goal each cycle via Commands.run(); the subsystem decides how to
- * fulfill it. The default goal is TELEOP (driver joystick). LOCK engages X-formation
- * braking. During autonomous, TELEOP automatically becomes LOCK so the robot holds
- * position when no auto command owns the drivetrain.
+ * Extends CTRE's generated TunerSwerveDrivetrain directly (no intermediate class).
  */
-public class DriveSubsystem extends CommandSwerveDrivetrain {
+public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Subsystem {
 
     // ── Goal / state machine ──────────────────────────────────────────────────
 
@@ -55,18 +60,7 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
 
     private Supplier<Double> axialSupplier    = () -> 0.0;
     private Supplier<Double> lateralSupplier  = () -> 0.0;
-    private Supplier<Double> forXSupplier     = () -> 0.0;
-    private Supplier<Double> forYSupplier     = () -> 0.0;
-    private Supplier<String> driveModeSupplier = () -> "Swerve Drive";
-
-    // ── Absolute-rotation PID (used in "Field Oriented" drive mode) ───────────
-
-    private final ProfiledPIDController absoluteController =
-        Constants.Drivetrain.absoluteRotationPID
-            .createProfiledController(Constants.Drivetrain.absoluteRotationConstraints);
-
-    private Angle  forTarget    = Units.Radians.zero();
-    private double forMagnitude = 0.5;
+    private Supplier<Double> rotationSupplier = () -> 0.0;
 
     // ── Swerve requests (allocate once, mutate via with-methods) ─────────────
 
@@ -86,11 +80,69 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
     private static final Matrix<N3, N1> VISION_STD_DEVS =
         VecBuilder.fill(0.7, 0.7, 9999999);
 
-    // Feedforward used for limelight-based rotational correction during AIM_SPEAKER.
-    // kV=5 matches the original ShootSpeaker auto-align scaling; output is clamped to ±0.125 rad/s.
+    // Feedforward for limelight-based rotational correction during AIM_SPEAKER.
     private static final SimpleMotorFeedforward aimFF = new SimpleMotorFeedforward(0, 5);
 
-    // ── Limelights (used by shooter/intake commands) ─────────────────────────
+    // ── Operator perspective ─────────────────────────────────────────────────
+
+    private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
+    private static final Rotation2d kRedAlliancePerspectiveRotation = Rotation2d.k180deg;
+    private boolean m_hasAppliedOperatorPerspective = false;
+
+    // ── Simulation ───────────────────────────────────────────────────────────
+
+    private static final double kSimLoopPeriod = 0.004;
+    private Notifier m_simNotifier = null;
+    private double m_lastSimTime;
+
+    // ── SysId characterization ───────────────────────────────────────────────
+
+    private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization =
+        new SwerveRequest.SysIdSwerveTranslation();
+    private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization =
+        new SwerveRequest.SysIdSwerveSteerGains();
+    private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization =
+        new SwerveRequest.SysIdSwerveRotation();
+
+    private final SysIdRoutine m_sysIdRoutineTranslation = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            null, Volts.of(4), null,
+            state -> SignalLogger.writeString("SysIdTranslation_State", state.toString())
+        ),
+        new SysIdRoutine.Mechanism(
+            output -> setControl(m_translationCharacterization.withVolts(output)), null, this
+        )
+    );
+
+    private final SysIdRoutine m_sysIdRoutineSteer = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            null, Volts.of(7), null,
+            state -> SignalLogger.writeString("SysIdSteer_State", state.toString())
+        ),
+        new SysIdRoutine.Mechanism(
+            volts -> setControl(m_steerCharacterization.withVolts(volts)), null, this
+        )
+    );
+
+    private final SysIdRoutine m_sysIdRoutineRotation = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            Volts.of(Math.PI / 6).per(Second),
+            Volts.of(Math.PI),
+            null,
+            state -> SignalLogger.writeString("SysIdRotation_State", state.toString())
+        ),
+        new SysIdRoutine.Mechanism(
+            output -> {
+                setControl(m_rotationCharacterization.withRotationalRate(output.in(Volts)));
+                SignalLogger.writeDouble("Rotational_Rate", output.in(Volts));
+            },
+            null, this
+        )
+    );
+
+    private SysIdRoutine m_sysIdRoutineToApply = m_sysIdRoutineTranslation;
+
+    // ── Limelights ───────────────────────────────────────────────────────────
 
     public final Limelight limelightNote    = new Limelight("limelight-note");
     public final Limelight limelightShooter = new Limelight("limelight-shooter");
@@ -104,7 +156,7 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
-    public DriveSubsystem() {
+    public CommandSwerveDrivetrain() {
         super(
             TunerConstants.DrivetrainConstants,
             TunerConstants.FrontLeft,
@@ -113,7 +165,9 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
             TunerConstants.BackRight
         );
 
-        absoluteController.enableContinuousInput(-0.5, 0.5);
+        if (Utils.isSimulation()) {
+            startSimThread();
+        }
 
         CommandScheduler.getInstance().registerSubsystem(this);
         setVisionMeasurementStdDevs(VISION_STD_DEVS);
@@ -128,14 +182,10 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
     public void configureJoystick(
             final Supplier<Double> axial,
             final Supplier<Double> lateral,
-            final Supplier<Double> forX,
-            final Supplier<Double> forY,
-            final Supplier<String> driveMode) {
+            final Supplier<Double> rotation) {
         this.axialSupplier    = axial;
         this.lateralSupplier  = lateral;
-        this.forXSupplier     = forX;
-        this.forYSupplier     = forY;
-        this.driveModeSupplier = driveMode;
+        this.rotationSupplier = rotation;
     }
 
     /**
@@ -146,7 +196,7 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
         wantedState = switch (ctx.goal().drive()) {
             case TELEOP      -> WantedState.TELEOP;
             case LOCK        -> WantedState.LOCK;
-            case AUTONOMOUS  -> WantedState.TELEOP; // auto commands drive via driveFieldOriented() directly
+            case AUTONOMOUS  -> WantedState.TELEOP;
             case AIM_SPEAKER -> WantedState.AIM_SPEAKER;
             case TRACK_NOTE  -> WantedState.TRACK_NOTE;
         };
@@ -156,23 +206,32 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
 
     @Override
     public void periodic() {
-        super.periodic(); // applies alliance-relative operator perspective + odometry
+        // Apply operator perspective for alliance-correct field-centric driving
+        if (!m_hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
+            DriverStation.getAlliance().ifPresent(allianceColor -> {
+                setOperatorPerspectiveForward(
+                    allianceColor == Alliance.Red
+                        ? kRedAlliancePerspectiveRotation
+                        : kBlueAlliancePerspectiveRotation
+                );
+                m_hasAppliedOperatorPerspective = true;
+            });
+        }
 
         systemState = handleStateTransition();
         applyState();
 
         final SwerveDriveState state = getState();
         Logger.recordOutput("Drive/Pose",          state.Pose);
-        Logger.recordOutput("Drive/Speeds",         state.Speeds);
-        Logger.recordOutput("Drive/ModuleStates",   state.ModuleStates);
-        Logger.recordOutput("Drive/ModuleTargets",  state.ModuleTargets);
+        Logger.recordOutput("Drive/Speeds",        state.Speeds);
+        Logger.recordOutput("Drive/ModuleStates",  state.ModuleStates);
+        Logger.recordOutput("Drive/ModuleTargets", state.ModuleTargets);
         Logger.recordOutput("Drive/OdometryPeriod", state.OdometryPeriod);
-        Logger.recordOutput("Drive/SystemState",    systemState.toString());
+        Logger.recordOutput("Drive/SystemState",   systemState.toString());
     }
 
     private SystemState handleStateTransition() {
         return switch (wantedState) {
-            // During autonomous, fall back to X-lock when no auto command owns the drivetrain.
             case TELEOP      -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.TELEOP;
             case LOCK        -> SystemState.LOCK;
             case AIM_SPEAKER -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.AIM_SPEAKER;
@@ -193,25 +252,21 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
         }
     }
 
-    /**
-     * Joystick translation with limelight-based rotational correction for speaker shots.
-     * Replicates the auto-align logic previously in ShootSpeaker.execute().
-     */
+    // ── AIM_SPEAKER ──────────────────────────────────────────────────────────
+
     private void applyAimSpeaker() {
         final boolean facingForward = getPose().getRotation().getCos() < 0;
         final var t = translation();
 
         final double rotCorrection;
         if (facingForward && limelightShooter.hasValidTargets()) {
-            // limelight mounted sideways: vertical offset is the yaw error
-            final double yo = limelightShooter.getTargetVerticalOffset().in(Units.Rotations);
-            rotCorrection = MathUtil.clamp(aimFF.calculate(yo), -0.125, 0.125);
+            final double verticalOffset = limelightShooter.getTargetVerticalOffset().in(Units.Rotations);
+            rotCorrection = MathUtil.clamp(aimFF.calculate(verticalOffset), -0.125, 0.125);
         } else if (!facingForward && limelightRear.hasValidTargets()) {
-            final double ho = limelightRear.getTargetHorizontalOffset().in(Units.Rotations);
-            rotCorrection = aimFF.calculate(ho);
+            final double horizontalOffset = limelightRear.getTargetHorizontalOffset().in(Units.Rotations);
+            rotCorrection = aimFF.calculate(horizontalOffset);
         } else {
-            // No limelight target — fall back to joystick rotation
-            rotCorrection = -MathUtil.applyDeadband(forXSupplier.get(), 0.075);
+            rotCorrection = -MathUtil.applyDeadband(rotationSupplier.get(), 0.075);
         }
 
         final ChassisSpeeds s = new ChassisSpeeds(
@@ -223,11 +278,8 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
         driveFieldOriented(s);
     }
 
-    /**
-     * Joystick translation with additive limelight-based correction toward the note.
-     * Driver retains full control — the correction is added on top of joystick input.
-     * Falls back to pure joystick when limelight has no valid target.
-     */
+    // ── TRACK_NOTE ───────────────────────────────────────────────────────────
+
     private void applyTrackNote() {
         final ChassisSpeeds joystick = computeJoystickSpeeds();
         joystickSpeeds = joystick;
@@ -240,8 +292,7 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
         final double horizontalOffsetDeg = limelightNote.getTargetHorizontalOffset().in(Units.Degrees);
         final double horizontalOffsetRot = limelightNote.getTargetHorizontalOffset().in(Units.Rotations);
 
-        // Robot-relative: X drives toward note, Y steers laterally to center it.
-        final ChassisSpeeds correction = rod(new ChassisSpeeds(
+        final ChassisSpeeds correction = robotToField(new ChassisSpeeds(
             -10.0 / (Math.abs(horizontalOffsetDeg) + 1),
             horizontalOffsetRot * 10,
             0
@@ -252,15 +303,14 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
         driveFieldOriented(joystick.plus(correction));
     }
 
-    // ── Joystick computation (was JoystickDrive) ─────────────────────────────
+    // ── Joystick computation ─────────────────────────────────────────────────
 
     private ChassisSpeeds computeJoystickSpeeds() {
         final Translation2d t = translation();
-        return new ChassisSpeeds(
-            t.getX(),
-            t.getY(),
-            theta().in(Units.RadiansPerSecond)
-        );
+        final double rotation = -MathUtil.applyDeadband(rotationSupplier.get(), 0.1);
+        final double omega = Constants.Drivetrain.maxAngularVelocity
+            .times(rotation).in(Units.RadiansPerSecond);
+        return new ChassisSpeeds(t.getX(), t.getY(), omega);
     }
 
     private Translation2d translation() {
@@ -279,37 +329,7 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
         return new Translation2d(vx.in(Units.MetersPerSecond), vy.in(Units.MetersPerSecond));
     }
 
-    private AngularVelocity theta() {
-        final double theta;
-
-        if ("Swerve Drive".equals(driveModeSupplier.get())) {
-            theta = -MathUtil.applyDeadband(forXSupplier.get(), 0.075);
-        } else {
-            // Field Oriented: right stick angle sets target heading, PID drives toward it.
-            final double rotX = forXSupplier.get();
-            final double rotY = forYSupplier.get();
-
-            forMagnitude = Math.hypot(rotX, rotY);
-            Logger.recordOutput("Drive/AbsoluteRotation/Magnitude", forMagnitude);
-
-            if (forMagnitude > 0.5) forTarget = Units.Radians.of(-Math.atan2(rotX, rotY));
-            Logger.recordOutput("Drive/AbsoluteRotation/Target", forTarget);
-
-            forMagnitude = forMagnitude * 0.5 + 0.5;
-
-            final double measurement = getPose().getRotation().getRotations();
-            final double setpoint    = forTarget.in(Units.Rotations);
-
-            theta = MathUtil.applyDeadband(
-                -(absoluteController.calculate(measurement, setpoint)),
-                0.075
-            );
-        }
-
-        return Constants.Drivetrain.maxAngularVelocity.times(theta * forMagnitude);
-    }
-
-    // ── Control methods (used directly by auto/vision commands) ──────────────
+    // ── Control methods ──────────────────────────────────────────────────────
 
     public void driveFieldOriented(final ChassisSpeeds fieldRelativeSpeeds) {
         final ChassisSpeeds discretized = ChassisSpeeds.discretize(fieldRelativeSpeeds, 0.02);
@@ -339,12 +359,62 @@ public class DriveSubsystem extends CommandSwerveDrivetrain {
     }
 
     /** Converts robot-relative speeds to field-relative using current heading. */
-    public ChassisSpeeds rod(final ChassisSpeeds robotRelativeSpeeds) {
+    public ChassisSpeeds robotToField(final ChassisSpeeds robotRelativeSpeeds) {
         return ChassisSpeeds.fromRobotRelativeSpeeds(robotRelativeSpeeds, getPose().getRotation());
     }
 
-    /** Zeros the field-oriented heading (sets current heading as forward). */
+    /** Zeros the field-oriented heading to "away from driver station" for current alliance. */
     public void resetAngle() {
-        resetPose(new Pose2d(getPose().getTranslation(), Rotation2d.kZero));
+        seedFieldCentric();
+    }
+
+    // ── SysId commands ───────────────────────────────────────────────────────
+
+    public Command applyRequest(Supplier<SwerveRequest> request) {
+        return run(() -> this.setControl(request.get()));
+    }
+
+    public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+        return m_sysIdRoutineToApply.quasistatic(direction);
+    }
+
+    public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+        return m_sysIdRoutineToApply.dynamic(direction);
+    }
+
+    // ── Vision measurement overrides (FPGA timestamp correction) ─────────────
+
+    @Override
+    public void addVisionMeasurement(Pose2d visionRobotPoseMeters, double timestampSeconds) {
+        super.addVisionMeasurement(visionRobotPoseMeters, Utils.fpgaToCurrentTime(timestampSeconds));
+    }
+
+    @Override
+    public void addVisionMeasurement(
+        Pose2d visionRobotPoseMeters,
+        double timestampSeconds,
+        Matrix<N3, N1> visionMeasurementStdDevs
+    ) {
+        super.addVisionMeasurement(
+            visionRobotPoseMeters, Utils.fpgaToCurrentTime(timestampSeconds), visionMeasurementStdDevs
+        );
+    }
+
+    @Override
+    public Optional<Pose2d> samplePoseAt(double timestampSeconds) {
+        return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
+    }
+
+    // ── Simulation ───────────────────────────────────────────────────────────
+
+    private void startSimThread() {
+        m_lastSimTime = Utils.getCurrentTimeSeconds();
+        m_simNotifier = new Notifier(() -> {
+            final double currentTime = Utils.getCurrentTimeSeconds();
+            double deltaTime = currentTime - m_lastSimTime;
+            m_lastSimTime = currentTime;
+            updateSimState(deltaTime, RobotController.getBatteryVoltage());
+        });
+        m_simNotifier.startPeriodic(kSimLoopPeriod);
     }
 }

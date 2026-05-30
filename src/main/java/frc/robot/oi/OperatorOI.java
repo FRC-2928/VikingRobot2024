@@ -71,6 +71,10 @@ public class OperatorOI extends BaseOI {
 			() -> false
 		));
 
-		this.fixedShoot.whileTrue(Robot.cont.superstructure.setShooterIntentCommand(ShooterGoal.SHOOT_FIXED));
+		this.fixedShoot
+			.onTrue(new edu.wpi.first.wpilibj2.command.InstantCommand(
+				() -> Robot.cont.superstructure.resolver.setShooterIntent(ShooterGoal.SHOOT_FIXED)))
+			.onFalse(new edu.wpi.first.wpilibj2.command.InstantCommand(
+				() -> Robot.cont.superstructure.resolver.setShooterIntent(ShooterGoal.HOME)));
 	}
 }

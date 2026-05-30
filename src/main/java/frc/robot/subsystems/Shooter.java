@@ -175,16 +175,16 @@ public class Shooter extends SubsystemBase {
         if (facingForward && isShooterForward) {
             if (Robot.cont.drivetrain.limelightShooter.hasValidTargets()) {
                 // limelight is mounted sideways: horizontal offset → pitch, vertical offset → yaw
-                final var po = Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset();
-                final var yo = Robot.cont.drivetrain.limelightShooter
+                final var pitchOffset = Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset();
+                final var yawOffset = Robot.cont.drivetrain.limelightShooter
                     .getTargetVerticalOffset()
                     .times(isShooterForward ? 1 : -1);
 
                 final boolean pivotInPosition =
-                    Math.abs(po.in(Units.Degrees)) < Tuning.shootSpeakerPivotThreshold.get();
+                    Math.abs(pitchOffset.in(Units.Degrees)) < Tuning.shootSpeakerPivotThreshold.get();
 
-                Logger.recordOutput("Shooter/ShootSpeaker/tx", po.in(Units.Degrees));
-                Logger.recordOutput("Shooter/ShootSpeaker/ty", yo.in(Units.Degrees));
+                Logger.recordOutput("Shooter/ShootSpeaker/tx", pitchOffset.in(Units.Degrees));
+                Logger.recordOutput("Shooter/ShootSpeaker/ty", yawOffset.in(Units.Degrees));
                 Logger.recordOutput("Shooter/ShootSpeaker/PivotInPosition", pivotInPosition);
                 Logger.recordOutput("Shooter/ShootSpeaker/FlywheelAtSpeed", flywheelAtSpeed);
                 Logger.recordOutput("Shooter/ShootSpeaker/PivotVelocityOk", pivotVelocityOk);
@@ -193,10 +193,10 @@ public class Shooter extends SubsystemBase {
                     io.rotate(
                         Units.Rotations.of(
                             inputs.angle.in(Units.Rotations)
-                                + pitchPID.calculate(pow(po.in(Units.Rotations), Tuning.shootSpeakerExponent.get()))
+                                + pitchPID.calculate(pow(pitchOffset.in(Units.Rotations), Tuning.shootSpeakerExponent.get()))
                         )
                     );
-                } else if ((flywheelAtSpeed && pivotVelocityOk && yo.in(Units.Degrees) < 10) || firedTime != -1) {
+                } else if ((flywheelAtSpeed && pivotVelocityOk && yawOffset.in(Units.Degrees) < 10) || firedTime != -1) {
                     io.runFeeder(Demand.Forward);
                     if (firedTime == -1) firedTime = Timer.getFPGATimestamp();
                 }

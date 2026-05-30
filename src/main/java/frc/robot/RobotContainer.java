@@ -4,25 +4,23 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import frc.robot.oi.DriverOI;
 import frc.robot.oi.OperatorOI;
 import frc.robot.superstructure.Superstructure;
 import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Diagnostics;
-import frc.robot.subsystems.drive.DriveSubsystem;
+import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 import frc.robot.subsystems.LimelightFXManager;
 import frc.robot.subsystems.Shooter;
 
 public class RobotContainer {
 	public final LoggedDashboardChooser<Command> autonomousChooser;
-	public final LoggedDashboardChooser<String> driveModeChooser;
 	public final DriverOI driverOI = new DriverOI(new CommandXboxController(0));
 	public final OperatorOI operatorOI = new OperatorOI(new CommandXboxController(1));
 
 	public final Diagnostics diag;
 
-	public final DriveSubsystem drivetrain;
+	public final CommandSwerveDrivetrain drivetrain;
 	public final Superstructure superstructure;
 	public final Shooter shooter;
 	public final Climber climber;
@@ -37,7 +35,7 @@ public class RobotContainer {
 		Tuning.flywheelVelocity.get(); // load the class to put the tuning controls on the dashboard
 
 		this.diag = new Diagnostics();
-		this.drivetrain = new DriveSubsystem();
+		this.drivetrain = new CommandSwerveDrivetrain();
 		this.shooter = new Shooter();
 		this.superstructure = new Superstructure(this.drivetrain, this.shooter);
 		this.climber = new Climber();
@@ -49,18 +47,12 @@ public class RobotContainer {
 		this.drivetrain.configureJoystick(
 			this.driverOI.driveAxial,
 			this.driverOI.driveLateral,
-			this.driverOI.driveFORX,
-			this.driverOI.driveFORY,
-			this::getDriveMode
+			this.driverOI.driveRotation
 		);
 
 		this.autonomousChooser = new LoggedDashboardChooser<>(
 			"Autonomous Routine",
 			Autonomous.createAutonomousChooser()
-		);
-		this.driveModeChooser = new LoggedDashboardChooser<>(
-			"Drive Mode",
-			RobotContainer.createDriveModeChooser()
 		);
 
 		this.driverOI.configureControls();
@@ -70,14 +62,4 @@ public class RobotContainer {
 	}
 
 	public Command getAutonomousCommand() { return this.autonomousChooser.get(); }
-
-	public String getDriveMode() { return this.driveModeChooser.get(); }
-
-	public static SendableChooser<String> createDriveModeChooser() {
-		final SendableChooser<String> chooser = new SendableChooser<>();
-		chooser.addOption("Swerve Drive", "Swerve Drive");
-		chooser.addOption("Field Oriented", "Field Oriented");
-		chooser.setDefaultOption("Swerve Drive", "Swerve Drive");
-		return chooser;
-	}
 }

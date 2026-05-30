@@ -16,7 +16,7 @@ public class VoltageRampCommand extends Command {
 
 	@Override
 	public void execute() {
-		// runCharacterization is not available in DriveSubsystem; use CTRE SysId routines instead
+		// runCharacterization is not available in CommandSwerveDrivetrain; use CTRE SysId routines instead
 		VoltageRampCommand.voltage += 0.005;
 	}
 
