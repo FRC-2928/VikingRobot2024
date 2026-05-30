@@ -16,12 +16,10 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
@@ -55,6 +53,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     private WantedState wantedState = WantedState.TELEOP;
     private SystemState systemState = SystemState.TELEOP;
+
+    // Snapshot of swerve state, taken once per periodic for thread safety.
+    private SwerveDriveState mCurrentSwerveState = new SwerveDriveState();
 
     // ── Joystick suppliers (injected by RobotContainer after OI is built) ────
 
@@ -218,24 +219,26 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             });
         }
 
+        // Snapshot state once per cycle for thread safety — all reads use this copy
+        mCurrentSwerveState = getState();
+
         systemState = handleStateTransition();
         applyState();
 
-        final SwerveDriveState state = getState();
-        Logger.recordOutput("Drive/Pose",          state.Pose);
-        Logger.recordOutput("Drive/Speeds",        state.Speeds);
-        Logger.recordOutput("Drive/ModuleStates",  state.ModuleStates);
-        Logger.recordOutput("Drive/ModuleTargets", state.ModuleTargets);
-        Logger.recordOutput("Drive/OdometryPeriod", state.OdometryPeriod);
+        Logger.recordOutput("Drive/Pose",          mCurrentSwerveState.Pose);
+        Logger.recordOutput("Drive/Speeds",        mCurrentSwerveState.Speeds);
+        Logger.recordOutput("Drive/ModuleStates",  mCurrentSwerveState.ModuleStates);
+        Logger.recordOutput("Drive/ModuleTargets", mCurrentSwerveState.ModuleTargets);
+        Logger.recordOutput("Drive/OdometryPeriod", mCurrentSwerveState.OdometryPeriod);
         Logger.recordOutput("Drive/SystemState",   systemState.toString());
     }
 
     private SystemState handleStateTransition() {
         return switch (wantedState) {
-            case TELEOP      -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.TELEOP;
+            case TELEOP      -> SystemState.TELEOP;
             case LOCK        -> SystemState.LOCK;
-            case AIM_SPEAKER -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.AIM_SPEAKER;
-            case TRACK_NOTE  -> DriverStation.isAutonomous() ? SystemState.LOCK : SystemState.TRACK_NOTE;
+            case AIM_SPEAKER -> SystemState.AIM_SPEAKER;
+            case TRACK_NOTE  -> SystemState.TRACK_NOTE;
         };
     }
 
@@ -255,8 +258,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     // ── AIM_SPEAKER ──────────────────────────────────────────────────────────
 
     private void applyAimSpeaker() {
-        final boolean facingForward = getPose().getRotation().getCos() < 0;
-        final var t = translation();
+        final boolean facingForward = mCurrentSwerveState.Pose.getRotation().getCos() < 0;
+        final ChassisSpeeds joystick = computeJoystickSpeeds();
 
         final double rotCorrection;
         if (facingForward && limelightShooter.hasValidTargets()) {
@@ -269,10 +272,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             rotCorrection = -MathUtil.applyDeadband(rotationSupplier.get(), 0.075);
         }
 
+        final double maxOmega = Constants.Drivetrain.maxAngularVelocity.in(Units.RadiansPerSecond);
         final ChassisSpeeds s = new ChassisSpeeds(
-            t.getX(),
-            t.getY(),
-            Constants.Drivetrain.maxAngularVelocity.times(rotCorrection).in(Units.RadiansPerSecond)
+            joystick.vxMetersPerSecond,
+            joystick.vyMetersPerSecond,
+            rotCorrection * maxOmega
         );
         joystickSpeeds = s;
         driveFieldOriented(s);
@@ -305,28 +309,37 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     // ── Joystick computation ─────────────────────────────────────────────────
 
+    private static final double TRANSLATION_DEADBAND = 0.1;
+    private static final double ROTATION_DEADBAND = 0.1;
+
     private ChassisSpeeds computeJoystickSpeeds() {
-        final Translation2d t = translation();
-        final double rotation = -MathUtil.applyDeadband(rotationSupplier.get(), 0.1);
-        final double omega = Constants.Drivetrain.maxAngularVelocity
-            .times(rotation).in(Units.RadiansPerSecond);
-        return new ChassisSpeeds(t.getX(), t.getY(), omega);
-    }
+        final double maxSpeed = Constants.Drivetrain.maxVelocity.in(Units.MetersPerSecond);
+        final double maxOmega = Constants.Drivetrain.maxAngularVelocity.in(Units.RadiansPerSecond);
 
-    private Translation2d translation() {
-        final double axial   = MathUtil.applyDeadband(axialSupplier.get(),   0.1);
-        final double lateral = MathUtil.applyDeadband(lateralSupplier.get(), 0.1);
+        // Deadband raw inputs
+        double axial   = MathUtil.applyDeadband(axialSupplier.get(), TRANSLATION_DEADBAND);
+        double lateral = MathUtil.applyDeadband(lateralSupplier.get(), TRANSLATION_DEADBAND);
+        double rotation = MathUtil.applyDeadband(-rotationSupplier.get(), ROTATION_DEADBAND);
 
-        final Rotation2d direction = Rotation2d.fromRadians(Math.atan2(lateral, axial));
-        final double magnitude = Math.pow(MathUtil.clamp(Math.hypot(axial, lateral), 0, 1), 2);
+        // Clamp to unit circle so diagonal doesn't exceed max speed
+        double translationMagnitude = Math.hypot(axial, lateral);
+        if (translationMagnitude > 1.0) {
+            axial /= translationMagnitude;
+            lateral /= translationMagnitude;
+            translationMagnitude = 1.0;
+        }
 
-        final double dx = Math.cos(direction.getRadians()) * magnitude;
-        final double dy = Math.sin(direction.getRadians()) * magnitude;
+        // Square magnitude for sensitivity curve, preserve direction
+        double scaledMagnitude = translationMagnitude * translationMagnitude;
+        double scale = (translationMagnitude > 0) ? scaledMagnitude / translationMagnitude : 0;
 
-        final LinearVelocity vx = Constants.Drivetrain.maxVelocity.times(dx);
-        final LinearVelocity vy = Constants.Drivetrain.maxVelocity.times(dy);
+        double vx = axial * scale * maxSpeed;
+        double vy = lateral * scale * maxSpeed;
 
-        return new Translation2d(vx.in(Units.MetersPerSecond), vy.in(Units.MetersPerSecond));
+        // Square rotation for sensitivity
+        double omega = Math.copySign(rotation * rotation, rotation) * maxOmega;
+
+        return new ChassisSpeeds(vx, vy, omega);
     }
 
     // ── Control methods ──────────────────────────────────────────────────────
@@ -355,12 +368,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     // ── Pose utilities ────────────────────────────────────────────────────────
 
     public Pose2d getPose() {
-        return getState().Pose;
+        return mCurrentSwerveState.Pose;
     }
 
     /** Converts robot-relative speeds to field-relative using current heading. */
     public ChassisSpeeds robotToField(final ChassisSpeeds robotRelativeSpeeds) {
-        return ChassisSpeeds.fromRobotRelativeSpeeds(robotRelativeSpeeds, getPose().getRotation());
+        return ChassisSpeeds.fromRobotRelativeSpeeds(robotRelativeSpeeds, mCurrentSwerveState.Pose.getRotation());
     }
 
     /** Zeros the field-oriented heading to "away from driver station" for current alliance. */
