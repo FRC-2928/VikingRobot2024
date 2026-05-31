@@ -11,7 +11,7 @@ This document tracks the subsystem-by-subsystem refactor to the goal-based archi
 | 1 | Drive — goal-based refactor + hardware test | 🔄 Partial hardware testing done |
 | 2 | Superstructure skeleton + Drive wired | 🔄 Partial hardware testing done |
 | 3 | Shooter — full conversion (state machine + Superstructure + OI) | 🔄 Partial hardware testing done |
-| 4 | Climber — full conversion (state machine + Superstructure + OI) | ⬜ Pending |
+| 4 | Climber — full conversion (state machine + Superstructure + OI) | 🔄 Code complete, awaiting hardware testing |
 | 5 | Auto routines | ⬜ Pending |
 | 6 | Architecture docs | ⬜ Ongoing |
 
@@ -158,60 +158,63 @@ Convert `Shooter.java` to the WantedState/SystemState pattern, wire it into the 
 
 ## Phase 4 — Climber Full Conversion
 
-**Status:** ⬜ Pending Phase 3 hardware sign-off
+**Status:** 🔄 Code complete, awaiting hardware testing
 
 ### Goal
 Convert `Climber.java` to the WantedState/SystemState pattern, wire into the Superstructure, and implement the key interlock: climber cannot deploy if the shooter is not at a safe angle. The interlock lives in `Climber.applyGoal()` as a guard clause checking `SuperstructureContext`.
 
-### Relevant Files
-- `src/main/java/frc/robot/subsystems/Climber.java` — add state machine + interlock
-- `src/main/java/frc/robot/subsystems/ClimberIO.java` — interface (likely unchanged)
-- `src/main/java/frc/robot/subsystems/ClimberIOReal.java` — hardware impl (likely unchanged)
-- Create `src/main/java/frc/robot/subsystems/climber/ClimberGoal.java`
-- `src/main/java/frc/robot/superstructure/RobotGoal.java` — add `ClimberGoal climber` field
-- `src/main/java/frc/robot/superstructure/SuperstructureContext.java` — add climber state snapshot
-- `src/main/java/frc/robot/superstructure/GoalResolver.java` — add climber intents
-- `src/main/java/frc/robot/oi/OperatorOI.java` — climber triggers use intents
+### What Was Changed
+- `ClimberIOReal.java` — stripped non-functional ratchet servo and state machine entirely; `set()` now drives motor directly
+- `ClimberIO.java` — removed `periodic()` default method (only existed for ratchet)
+- `Constants.Climber` — removed dead ratchet constants (`ratchetEnabled`, `ratchetLocked`, `ratchetFree`, `disengageDistance`)
+- Created `src/main/java/frc/robot/subsystems/climber/ClimberGoal.java` — `IDLE`, `INITIALIZE`, `DEPLOY`, `RETRACT`, `LOCKED`
+- `Climber.java` — rewritten with full `WantedState`/`SystemState` machine; `applyGoal()` includes shooter-angle interlock; `getState()` returns `ClimberState` snapshot; `Initialize.java` logic folded into `INITIALIZING_RAISE`/`INITIALIZING_HOME` states
+- `RobotGoal.java` — added `ClimberGoal climber` field, builder support, `climb()` factory
+- `SuperstructureContext.java` — added `ClimberState climberState` field
+- `GoalResolver.java` — added `climberIntent` field, `setClimberIntent()`, wired into `resolve()` and `setGoal()`
+- `Superstructure.java` — added `Climber` parameter, wires `climber.applyGoal(ctx)` each cycle
+- `RobotContainer.java` — `climber` instantiated before `superstructure` (required for constructor)
+- `OperatorOI.java` — `climberUp`/`climberDown`/`initializeClimber` converted to intent path; override POV controls remain direct
+- Deleted `commands/climber/Initialize.java`
 
 ### Hardware: What's on the Climber
 - TalonFX: actuator motor (with remote CANcoder for position feedback)
-- Servo: ratchet lock
 
-### Proposed ClimberGoal States
+### ClimberGoal States
 | Goal | Meaning |
 |------|---------|
-| `IDLE` | Hold current position, ratchet engaged. Safe default. |
-| `INITIALIZE` | Run to home (limit switch) and zero encoder |
-| `DEPLOY` | Extend to max height |
-| `RETRACT` | Pull down to climb position |
-| `LOCKED` | Ratchet engaged, motor off |
+| `IDLE` | Hold current position. Safe default. |
+| `INITIALIZE` | Raise by `initializeRaiseDistance`, then descend until home switch closes and encoder zeros. |
+| `DEPLOY` | Extend to `Constants.Climber.max`. |
+| `RETRACT` | Pull down to position 0. |
+| `LOCKED` | Motor output zero. |
 
 ### Interlock
 ```java
 // In Climber.applyGoal():
-if (desired == ClimberGoal.DEPLOY && !ctx.shooterState().isAtSafeAngle()) {
+if (desired == ClimberGoal.DEPLOY && !ctx.shooterState().atSafeAngle()) {
     wantedState = WantedState.IDLE; // wait for shooter to clear
     return;
 }
 ```
 
 ### Checklist
-- [ ] Create `ClimberGoal.java` enum
-- [ ] Add `WantedState`/`SystemState` enums and `applyGoal(ClimberGoal)` to `Climber.java`
-- [ ] Implement `handleStateTransition()` (position/limit checks → `SystemState`)
-- [ ] Implement `applyState()` (calls `io.*` methods)
-- [ ] Add deploy interlock using `SuperstructureContext.shooterState().isAtSafeAngle()`
-- [ ] Add `ClimberGoal climber` field to `RobotGoal` (safe default: `ClimberGoal.IDLE`)
-- [ ] Add climber state to `SuperstructureContext`
-- [ ] Update `GoalResolver` with climber intents
-- [ ] Update `OperatorOI` to push climber intents
-- [ ] `./gradlew build` passes clean
+- [x] Create `ClimberGoal.java` enum
+- [x] Add `WantedState`/`SystemState` enums and `applyGoal(ClimberGoal)` to `Climber.java`
+- [x] Implement `handleStateTransition()` (position/limit checks → `SystemState`)
+- [x] Implement `applyState()` (calls `io.*` methods)
+- [x] Add deploy interlock using `SuperstructureContext.shooterState().atSafeAngle()`
+- [x] Add `ClimberGoal climber` field to `RobotGoal` (safe default: `ClimberGoal.IDLE`)
+- [x] Add climber state to `SuperstructureContext`
+- [x] Update `GoalResolver` with climber intents
+- [x] Update `OperatorOI` to push climber intents
+- [x] `./gradlew build` passes clean
 
 ### Hardware Test Checklist
 - [ ] Climber initializes to home correctly
 - [ ] Deploy extends to full height; blocked when shooter is not at safe angle, unblocks when it clears
-- [ ] Retract pulls down smoothly; ratchet engages under load
-- [ ] AdvantageScope: `Climber/SystemState`, `Climber/Position` log correctly
+- [ ] Retract pulls down smoothly
+- [ ] AdvantageScope: `Climber/SystemState`, `Climber/WantedState`, `Climber/Position` log correctly
 
 ---
 
@@ -272,3 +275,5 @@ Produce student-readable reference docs in `docs/architecture/`. Each doc should
 - **VoltageRampCommand**: `runCharacterization()` was removed in the CTRE migration. If SysId characterization is needed, use CTRE's built-in SysId routines via `SwerveDrivetrain.sysIdQuasistatic()` / `sysIdDynamic()`.
 - **ShooterSpeaker interlock**: The old code checked `drivetrain.est.getEstimatedPosition()` for facing direction. This now uses `drivetrain.getPose()` — verify field-oriented facing logic is still correct during Phase 1 hardware testing.
 - ~~**FinishAmpShot / PrepareAmpShot**~~ — **Resolved in Phase 3.** These commands and `ShootAmp`, `Idle`, `ShootFixedDiag` were deleted. Amp behavior is now handled entirely within `Shooter.applyAmp()` / `applyHome()`.
+- **Climber ratchet removed**: The ratchet servo was non-functional and has been deleted from `ClimberIOReal`. `ClimberGoal.LOCKED` now means motor output zero only (no servo). If a ratchet is added to the 2026 robot, a new IO implementation and servo logic will be needed.
+- **`ClimberIOInputsAutoLogged`**: `Logger.processInputs("Climber", inputs)` is commented out in `Climber.java` pending `./gradlew build` generating the AutoLogged class. Uncomment and update `inputs` field type after the first full build.

@@ -88,7 +88,15 @@ public class Shooter extends SubsystemBase {
      * Sets {@code wantedState} from the goal; does not write to hardware.
      */
     public void applyGoal(final SuperstructureContext ctx) {
-        wantedState = switch (ctx.goal().shooter()) {
+        ShooterGoal desired = ctx.goal().shooter();
+
+        // Interlock: hold at safe (home) position while climber is not fully retracted
+        if (desired != ShooterGoal.HOME && !ctx.climberState().isRetracted()) {
+            wantedState = WantedState.HOME;
+            return;
+        }
+
+        wantedState = switch (desired) {
             case HOME          -> WantedState.HOME;
             case INTAKE        -> WantedState.INTAKE;
             case SHOOT_SPEAKER -> WantedState.SHOOT_SPEAKER;

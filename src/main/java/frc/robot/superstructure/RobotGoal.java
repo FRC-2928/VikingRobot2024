@@ -1,5 +1,6 @@
 package frc.robot.superstructure;
 
+import frc.robot.subsystems.climber.ClimberGoal;
 import frc.robot.subsystems.drive.DriveGoal;
 import frc.robot.subsystems.shooter.ShooterGoal;
 
@@ -24,7 +25,7 @@ import frc.robot.subsystems.shooter.ShooterGoal;
  *     .build();
  * </pre>
  */
-public record RobotGoal(DriveGoal drive, ShooterGoal shooter) {
+public record RobotGoal(DriveGoal drive, ShooterGoal shooter, ClimberGoal climber) {
 
     // -------------------------------------------------------------------------
     // Factory methods
@@ -73,6 +74,11 @@ public record RobotGoal(DriveGoal drive, ShooterGoal shooter) {
         return builder().withShooter(ShooterGoal.FERRY).build();
     }
 
+    /** Extend climber. Shooter commanded to HOME (pivot down) so it clears before deploy. */
+    public static RobotGoal climb() {
+        return builder().withClimber(ClimberGoal.DEPLOY).withShooter(ShooterGoal.HOME).build();
+    }
+
     // -------------------------------------------------------------------------
     // Builder
     // -------------------------------------------------------------------------
@@ -91,12 +97,14 @@ public record RobotGoal(DriveGoal drive, ShooterGoal shooter) {
         // Safe defaults
         private DriveGoal   drive   = DriveGoal.TELEOP;
         private ShooterGoal shooter = ShooterGoal.HOME;
+        private ClimberGoal climber = ClimberGoal.IDLE;
 
         private Builder() {}
 
         private Builder(RobotGoal base) {
             this.drive   = base.drive;
             this.shooter = base.shooter;
+            this.climber = base.climber;
         }
 
         public Builder withDrive(DriveGoal drive) {
@@ -109,8 +117,13 @@ public record RobotGoal(DriveGoal drive, ShooterGoal shooter) {
             return this;
         }
 
+        public Builder withClimber(ClimberGoal climber) {
+            this.climber = climber;
+            return this;
+        }
+
         public RobotGoal build() {
-            return new RobotGoal(drive, shooter);
+            return new RobotGoal(drive, shooter, climber);
         }
     }
 }

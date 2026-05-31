@@ -1,5 +1,7 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+
 import org.littletonrobotics.junction.AutoLog;
 
 public interface ClimberIO {
@@ -17,5 +19,5 @@ public interface ClimberIO {
 
 	public default void updateInputs(final ClimberIOInputs inputs) {}
 
-	public default void periodic() {}
+	public default BaseStatusSignal[] getStatusSignals() { return new BaseStatusSignal[0]; }
 }

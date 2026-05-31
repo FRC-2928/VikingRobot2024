@@ -10,6 +10,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.drive.CommandSwerveDrivetrain;
 
@@ -32,6 +33,7 @@ public class Superstructure extends SubsystemBase {
 
     private CommandSwerveDrivetrain drivetrain;
     private Shooter shooter;
+    private Climber climber;
     public final GoalResolver resolver = new GoalResolver();
 
     // Per-subsystem signal registration. Preserves insertion order for diagnostics.
@@ -42,9 +44,10 @@ public class Superstructure extends SubsystemBase {
 
     public Superstructure() {}
 
-    public void setSubsystems(CommandSwerveDrivetrain drivetrain, Shooter shooter) {
+    public void setSubsystems(CommandSwerveDrivetrain drivetrain, Shooter shooter, Climber climber) {
         this.drivetrain = drivetrain;
-        this.shooter = shooter;
+        this.shooter    = shooter;
+        this.climber    = climber;
     }
 
     /**
@@ -77,9 +80,10 @@ public class Superstructure extends SubsystemBase {
         }
 
         RobotGoal goal = resolver.resolve();
-        SuperstructureContext ctx = new SuperstructureContext(goal, shooter.getState());
+        SuperstructureContext ctx = new SuperstructureContext(goal, shooter.getState(), climber.getState());
         drivetrain.applyGoal(ctx);
         shooter.applyGoal(ctx);
+        climber.applyGoal(ctx);
     }
 
     // -------------------------------------------------------------------------

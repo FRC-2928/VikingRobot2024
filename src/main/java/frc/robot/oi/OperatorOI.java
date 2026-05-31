@@ -1,13 +1,11 @@
 package frc.robot.oi;
 
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.Constants;
 import frc.robot.Robot;
-import frc.robot.commands.climber.Initialize;
 import frc.robot.subsystems.ShooterIO;
+import frc.robot.subsystems.climber.ClimberGoal;
 import frc.robot.subsystems.shooter.ShooterGoal;
 
 public class OperatorOI extends BaseOI {
@@ -48,15 +46,31 @@ public class OperatorOI extends BaseOI {
 	public final Trigger foc;
 
 	public void configureControls() {
-		this.climberDown.whileTrue(new RunCommand(() -> Robot.cont.climber.io.set(0)));
-		this.climberUp.whileTrue(new RunCommand(() -> Robot.cont.climber.io.set(Constants.Climber.max)));
+		this.climberDown
+			.onTrue(new edu.wpi.first.wpilibj2.command.InstantCommand(
+				() -> Robot.cont.superstructure.resolver.setClimberIntent(ClimberGoal.RETRACT)))
+			.onFalse(new edu.wpi.first.wpilibj2.command.InstantCommand(
+				() -> Robot.cont.superstructure.resolver.setClimberIntent(ClimberGoal.IDLE)));
+		this.climberUp
+			.onTrue(new edu.wpi.first.wpilibj2.command.InstantCommand(() -> {
+				Robot.cont.superstructure.resolver.setClimberIntent(ClimberGoal.DEPLOY);
+				Robot.cont.superstructure.resolver.setShooterIntent(ShooterGoal.HOME);
+			}))
+			.onFalse(new edu.wpi.first.wpilibj2.command.InstantCommand(() -> {
+				Robot.cont.superstructure.resolver.setClimberIntent(ClimberGoal.IDLE);
+				Robot.cont.superstructure.resolver.setShooterIntent(ShooterGoal.HOME);
+			}));
 
 		this.climberOverrideLower.whileTrue(new FunctionalCommand(() -> {
 		}, () -> Robot.cont.climber.io.override(-1), interrupted -> Robot.cont.climber.io.override(0), () -> false));
 		this.climberOverrideRaise.whileTrue(new FunctionalCommand(() -> {
 		}, () -> Robot.cont.climber.io.override(1), interrupted -> Robot.cont.climber.io.override(0), () -> false));
 
-		this.initializeClimber.onTrue(new Initialize());
+		this.initializeClimber
+			.onTrue(new edu.wpi.first.wpilibj2.command.InstantCommand(
+				() -> Robot.cont.superstructure.resolver.setClimberIntent(ClimberGoal.INITIALIZE)))
+			.onFalse(new edu.wpi.first.wpilibj2.command.InstantCommand(
+				() -> Robot.cont.superstructure.resolver.setClimberIntent(ClimberGoal.IDLE)));
 
 		this.intakeOut.whileTrue(new FunctionalCommand(() -> {
 		},

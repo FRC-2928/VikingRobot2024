@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Robot;
 import frc.robot.RobotContainer;
 import frc.robot.commands.drivetrain.TestDrive;
+import frc.robot.subsystems.climber.ClimberGoal;
 import frc.robot.subsystems.drive.DriveGoal;
 import frc.robot.subsystems.shooter.ShooterGoal;
 import frc.robot.superstructure.GoalResolver;
@@ -30,6 +31,9 @@ public class DriverOI extends BaseOI {
 		this.resetHeading = this.controller.y();
 
 		this.lockWheels = this.controller.x();
+
+	this.climberExtend = this.controller.povUp();
+	this.climberRetract = this.controller.povDown();
 	}
 
 	public final Supplier<Double> driveAxial;
@@ -45,6 +49,9 @@ public class DriverOI extends BaseOI {
 	public final Trigger resetHeading;
 
 	public final Trigger ferry;
+
+	public final Trigger climberExtend;
+	public final Trigger climberRetract;
 
 	public void configureControls() {
 		final GoalResolver resolver = Robot.cont.superstructure.resolver;
@@ -92,5 +99,13 @@ public class DriverOI extends BaseOI {
 			.onFalse(new InstantCommand(() -> resolver.setShooterIntent(ShooterGoal.HOME)));
 
 		this.controller.a().whileTrue(new TestDrive());
+
+		this.climberExtend
+			.onTrue(new InstantCommand(() -> resolver.setClimberIntent(ClimberGoal.DEPLOY)))
+			.onFalse(new InstantCommand(() -> resolver.setClimberIntent(ClimberGoal.IDLE)));
+
+		this.climberRetract
+			.onTrue(new InstantCommand(() -> resolver.setClimberIntent(ClimberGoal.RETRACT)))
+			.onFalse(new InstantCommand(() -> resolver.setClimberIntent(ClimberGoal.IDLE)));
 	}
 }

@@ -50,11 +50,12 @@ public class RobotContainer {
 		this.superstructure = new Superstructure();
 		this.drivetrain = new CommandSwerveDrivetrain();
 		this.shooter = new Shooter();
-		this.superstructure.setSubsystems(this.drivetrain, this.shooter);
 		this.climber = new Climber();
+		this.superstructure.setSubsystems(this.drivetrain, this.shooter, this.climber);
 		this.fxm = new LimelightFXManager();
 
 		this.superstructure.registerSignals(this.shooter, this.shooter.getStatusSignals());
+		this.superstructure.registerSignals(this.climber, this.climber.getStatusSignals());
 
 		this.diag.chirp(600, 500);
 		this.diag.chirp(900, 500);

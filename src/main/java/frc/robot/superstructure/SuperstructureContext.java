@@ -1,5 +1,6 @@
 package frc.robot.superstructure;
 
+import frc.robot.subsystems.Climber.ClimberState;
 import frc.robot.subsystems.Shooter.ShooterState;
 
 /**
@@ -11,10 +12,15 @@ import frc.robot.subsystems.Shooter.ShooterState;
  * <p>Phase 3: {@code shooterState} added for Phase 4 climber interlock
  * ({@code ctx.shooterState().atSafeAngle()}).
  */
-public record SuperstructureContext(RobotGoal goal, ShooterState shooterState) {
+public record SuperstructureContext(RobotGoal goal, ShooterState shooterState, ClimberState climberState) {
 
-    /** Convenience constructor for cycles where no shooter state is needed yet. */
+    /** Convenience constructor for cycles where no climber state is needed. */
+    public SuperstructureContext(RobotGoal goal, ShooterState shooterState) {
+        this(goal, shooterState, new ClimberState(0, false, false, false));
+    }
+
+    /** Convenience constructor for cycles where no subsystem state is needed yet. */
     public SuperstructureContext(RobotGoal goal) {
-        this(goal, new ShooterState(false, false, true));
+        this(goal, new ShooterState(false, false, true), new ClimberState(0, false, false, false));
     }
 }
