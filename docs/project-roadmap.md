@@ -269,6 +269,7 @@ Produce student-readable reference docs in `docs/architecture/`. Each doc should
 | `docs/architecture/subsystem-template.md` | Phase 3 | ⬜ |
 | `docs/architecture/interlocks.md` | Phase 4 | ⬜ |
 | `docs/architecture/auto-routines.md` | Phase 5 | ⬜ |
+| `docs/architecture/signal-refresh.md` | Phase 9 | ⬜ |
 | `docs/architecture/vision.md` | Phase 1 | ⬜ |
 
 ---
@@ -336,7 +337,25 @@ Ensure all driver/operator actions map correctly to the intent system, and remov
 ### Goal
 Add comprehensive telemetry for hardware health monitoring and tuning. Make it easy to diagnose issues in AdvantageScope without needing to add ad-hoc logging.
 
+### Signal Refresh Verification
+The Superstructure currently calls `BaseStatusSignal.refreshAll()` each cycle before goal
+resolution. Shooter and Climber register their signals via `registerSignals()` in
+RobotContainer. However this needs end-to-end verification:
+- [ ] Verify Shooter reads correct values after removing its own `refreshAll` from `updateInputs()`
+- [ ] Verify Climber signals refresh correctly through the same path
+- [ ] Confirm ordering: Superstructure.periodic() refreshes → then subsystem periodic() reads
+- [ ] Write `docs/architecture/signal-refresh.md` documenting the pattern for future subsystems
+
+### Pattern for New Subsystems
+When adding a new subsystem with CAN signals:
+1. Declare `StatusSignal<T>` fields in the IO real implementation
+2. Override `getStatusSignals()` in the IO real class to return them
+3. Expose `getStatusSignals()` on the subsystem (delegating to IO)
+4. Register in RobotContainer: `superstructure.registerSignals(subsystem, subsystem.getStatusSignals())`
+5. Do NOT call `BaseStatusSignal.refreshAll()` in `updateInputs()` — the Superstructure handles it
+
 ### Checklist
+- [ ] Verify batched signal refresh is working end-to-end (hardware test)
 - [ ] Per-module telemetry (drive/steer supply current, stator current, voltage, temperature) — model after 2026's `ModuleIOInputs` pattern
 - [ ] Register module signals with Superstructure's signal refresh orchestration
 - [ ] Consider offloading module telemetry reads to a separate thread (test latency impact)
