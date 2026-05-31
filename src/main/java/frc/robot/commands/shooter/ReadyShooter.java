@@ -7,30 +7,31 @@ package frc.robot.commands.shooter;
 import edu.wpi.first.units.*;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.Robot;
-import frc.robot.Tuning;
+import frc.robot.RobotContainer;import frc.robot.Tuning;
 
 public class ReadyShooter extends Command {
+	private final RobotContainer rc = RobotContainer.getInstance();
+
 	public ReadyShooter(final Angle angle, final boolean spinUp) {
 		this.angle = angle;
 		this.spinUp = spinUp;
-		this.addRequirements(Robot.cont.shooter);
+		this.addRequirements(rc.shooter);
 	}
 
 	public final Angle angle;
 	public final boolean spinUp;
 
 	@Override
-	public void initialize() { Robot.cont.shooter.io.retractAmpBar(); }
+	public void initialize() { rc.shooter.io.retractAmpBar(); }
 
 	@Override
 	public void execute() {
-		Robot.cont.shooter.io.rotate(this.angle);
-		if(this.spinUp) Robot.cont.shooter.io.runFlywheelsVelocity(Tuning.flywheelVelocity.get());
+		rc.shooter.io.rotate(this.angle);
+		if(this.spinUp) rc.shooter.io.runFlywheelsVelocity(Tuning.flywheelVelocity.get());
 	}
 
 	@Override
 	public boolean isFinished() {
-		return Math.abs(Robot.cont.shooter.inputs.angle.in(Units.Degrees) - this.angle.in(Units.Degrees)) < 2;
+		return Math.abs(rc.shooter.inputs.angle.in(Units.Degrees) - this.angle.in(Units.Degrees)) < 2;
 	}
 }

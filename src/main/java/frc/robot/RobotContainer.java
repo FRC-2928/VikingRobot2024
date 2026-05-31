@@ -18,6 +18,15 @@ import frc.robot.subsystems.LimelightFXManager;
 import frc.robot.subsystems.Shooter;
 
 public class RobotContainer {
+	private static RobotContainer sInstance = null;
+
+	public static synchronized RobotContainer getInstance() {
+		if (sInstance == null) {
+			sInstance = new RobotContainer();
+		}
+		return sInstance;
+	}
+
 	public final LoggedDashboardChooser<AutoOption> autonomousChooser;
 	public final DriverOI driverOI = new DriverOI(new CommandXboxController(0));
 	public final OperatorOI operatorOI = new OperatorOI(new CommandXboxController(1));
@@ -32,9 +41,7 @@ public class RobotContainer {
 	public final LimelightFXManager fxm;
 
 	public static boolean ledState = false;
-	public RobotContainer() {
-		Robot.instance.container = this;
-		Robot.cont = this;
+	private RobotContainer() {
 
 		Tuning.flywheelVelocity.get(); // load the class to put the tuning controls on the dashboard
 

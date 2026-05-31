@@ -6,7 +6,6 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.Robot;
 import frc.robot.RobotContainer;
 import frc.robot.commands.drivetrain.TestDrive;
 import frc.robot.subsystems.climber.ClimberGoal;
@@ -54,7 +53,7 @@ public class DriverOI extends BaseOI {
 	public final Trigger climberRetract;
 
 	public void configureControls() {
-		final GoalResolver resolver = Robot.cont.superstructure.resolver;
+		final GoalResolver resolver = RobotContainer.getInstance().superstructure.resolver;
 
 		this.shootSpeaker
 			.onTrue(new InstantCommand(() -> {
@@ -92,7 +91,7 @@ public class DriverOI extends BaseOI {
 				this.hid.setRumble(RumbleType.kBothRumble, 0);
 			}));
 
-		this.resetHeading.onTrue(new InstantCommand(Robot.cont.drivetrain::resetAngle));
+		this.resetHeading.onTrue(new InstantCommand(RobotContainer.getInstance().drivetrain::resetAngle));
 
 		this.ferry
 			.onTrue(new InstantCommand(() -> resolver.setShooterIntent(ShooterGoal.FERRY)))

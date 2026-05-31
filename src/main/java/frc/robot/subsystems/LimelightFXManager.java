@@ -2,8 +2,7 @@ package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj.SerialPort;
 import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.subsystems.LimelightFX.*;
+import frc.robot.RobotContainer;import frc.robot.subsystems.LimelightFX.*;
 import frc.robot.subsystems.LimelightFX.Behavior.*;
 import frc.robot.subsystems.LimelightFX.Module.*;
 
@@ -51,8 +50,8 @@ public class LimelightFXManager {
 		if(!Constants.LimelightFX.enabled) return;
 
 		this.fx.selector(() -> {
-			if(Robot.cont.shooter.inputs.holdingNote) return this.behHoldingNote;
-			else if(Robot.cont.ledState) return this.behHoldingNote;
+			if(RobotContainer.getInstance().shooter.inputs.holdingNote) return this.behHoldingNote;
+			else if(RobotContainer.getInstance().ledState) return this.behHoldingNote;
 			else return null;
 		});
 

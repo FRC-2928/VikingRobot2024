@@ -1,11 +1,10 @@
 package frc.robot.commands.drivetrain;
 
-import frc.robot.Robot;
-import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.RobotContainer;import edu.wpi.first.wpilibj2.command.Command;
 
 public class VoltageRampCommand extends Command {
 	public VoltageRampCommand() {
-		this.addRequirements(Robot.cont.drivetrain);
+		this.addRequirements(RobotContainer.getInstance().drivetrain);
 		VoltageRampCommand.voltage = 0;
 	}
 
@@ -24,6 +23,6 @@ public class VoltageRampCommand extends Command {
 	public boolean isFinished() { return VoltageRampCommand.voltage > 0.5; }
 
 	@Override
-	public void end(final boolean interrupted) { Robot.cont.drivetrain.halt(); }
+	public void end(final boolean interrupted) { RobotContainer.getInstance().drivetrain.halt(); }
 
 }

@@ -16,12 +16,13 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Velocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
-import frc.robot.Robot;
-
+import frc.robot.RobotContainer;
 public class LookForNote extends Command {
+  private final RobotContainer rc = RobotContainer.getInstance();
+
   /** Creates a new lookForNote. */
-  public LookForNote(Angle rotAmount) { 
-    this.addRequirements(Robot.cont.drivetrain); 
+  public LookForNote(Angle rotAmount) {
+    this.addRequirements(rc.drivetrain);
     this.rotationAmount = rotAmount;
   }
 
@@ -35,8 +36,8 @@ public class LookForNote extends Command {
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
-    this.currentAngle = Units.Rotations.of(Robot.cont.drivetrain.getPose().getRotation().getRotations());
-    this.initalAngle = Units.Rotations.of(Robot.cont.drivetrain.getPose().getRotation().getRotations());
+    this.currentAngle = Units.Rotations.of(rc.drivetrain.getPose().getRotation().getRotations());
+    this.initalAngle = Units.Rotations.of(rc.drivetrain.getPose().getRotation().getRotations());
     this.absoluteController.enableContinuousInput(-0.5,0.5);
     this.setpoint = this.initalAngle.plus(this.rotationAmount);
     this.absoluteController.reset(this.initalAngle.in(Units.Rotations));
@@ -45,11 +46,11 @@ public class LookForNote extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    this.currentAngle = Units.Rotations.of(Robot.cont.drivetrain.getPose().getRotation().getRotations());
+    this.currentAngle = Units.Rotations.of(rc.drivetrain.getPose().getRotation().getRotations());
     double measurement = this.currentAngle.in(Units.Rotations);
     this.computedPidValue = -this.absoluteController.calculate(measurement,this.setpoint.in(Units.Rotations));
     AngularVelocity rotationSpeed = Constants.Drivetrain.maxAngularVelocity.times( MathUtil.applyDeadband(this.computedPidValue,0.008));
-    Robot.cont.drivetrain.driveFieldOriented(new ChassisSpeeds(0, 0, rotationSpeed.in(Units.RadiansPerSecond)));
+    rc.drivetrain.driveFieldOriented(new ChassisSpeeds(0, 0, rotationSpeed.in(Units.RadiansPerSecond)));
     Logger.recordOutput("Drivetrain/Auto/setpoint",(this.setpoint.in(Units.Radians)));
     Logger.recordOutput("Drivetrain/Auto/currentAngle",(this.currentAngle.in(Units.Radians)));
     Logger.recordOutput("Drivetrain/Auto/initialAngle",(this.initalAngle.in(Units.Radians)));
@@ -60,7 +61,7 @@ public class LookForNote extends Command {
   // Called once the command ends or is interrupted.
   @Override
   public void end(final boolean interrupted) {
-      Robot.cont.drivetrain.halt();
+      rc.drivetrain.halt();
   }
 
   // Returns true when the command should end.
@@ -71,6 +72,6 @@ public class LookForNote extends Command {
     hasRotatedThruAngle = amountRotated >=  Math.abs(this.rotationAmount.in(Units.Radians)) - 0.03;
     Logger.recordOutput("Drivetrain/Auto/amountRotated",amountRotated);
     Logger.recordOutput("Drivetrain/Auto/hasRotatedThruAngle",(hasRotatedThruAngle));
-    return Robot.cont.drivetrain.limelightNote.hasValidTargets() || (hasRotatedThruAngle && (Math.abs(this.currentAngle.minus(this.setpoint).in(Units.Radians)) < 0.03 && this.computedPidValue < 0.1));
+    return rc.drivetrain.limelightNote.hasValidTargets() || (hasRotatedThruAngle && (Math.abs(this.currentAngle.minus(this.setpoint).in(Units.Radians)) < 0.03 && this.computedPidValue < 0.1));
   }
 }

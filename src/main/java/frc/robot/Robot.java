@@ -22,12 +22,8 @@ import frc.robot.commands.shooter.IntakeGround;
 import frc.robot.commands.shooter.LookForNote;
 
 public class Robot extends LoggedRobot {
-	public static Robot instance;
-	public static RobotContainer cont;
 	public static Command commandToRun;
 	public static boolean needToLookOtherWay;
-
-	public RobotContainer container;
 
 	private Command autonomousCommand;
 
@@ -57,8 +53,7 @@ public class Robot extends LoggedRobot {
 		Logger.start();
 		LiveWindow.disableAllTelemetry();
 
-		Robot.instance = this;
-		Robot.cont = new RobotContainer();
+		RobotContainer.getInstance();
 
 		DriverStation.silenceJoystickConnectionWarning(true);
 	}
@@ -82,12 +77,13 @@ public class Robot extends LoggedRobot {
 	// AUTONOMOUS //
 
 	private void resetPoseFromLimelight() {
-		var rear = this.container.drivetrain.limelightRear;
+		final var rc = RobotContainer.getInstance();
+		var rear = rc.drivetrain.limelightRear;
 		if (rear.hasValidTargets()) {
 			Pose2d pose = rear.getPose2d();
 			// Guard against all-zero default returned when no tags are actually resolved
 			if (pose.getTranslation().getNorm() > 0.5) {
-				this.container.drivetrain.resetPose(pose);
+				rc.drivetrain.resetPose(pose);
 				Logger.recordOutput("Robot/OnEnable/Source", "Limelight-Rear");
 				return;
 			}
@@ -97,21 +93,22 @@ public class Robot extends LoggedRobot {
 
 	@Override
 	public void autonomousInit() {
+		final var rc = RobotContainer.getInstance();
 		CommandScheduler.getInstance().cancelAll();
 
 		if (DriverStation.isFMSAttached()) {
-			this.container.getAutoStartPose().ifPresent(pose ->
-				this.container.drivetrain.resetPose(Autonomous.getPoseForAlliance(pose))
+			rc.getAutoStartPose().ifPresent(pose ->
+				rc.drivetrain.resetPose(Autonomous.getPoseForAlliance(pose))
 			);
 			Logger.recordOutput("Robot/OnEnable/Source", "FMS-AutoStart");
 		} else {
 			resetPoseFromLimelight();
 		}
 
-		this.container.shooter.io.retractAmpBar();
+		rc.shooter.io.retractAmpBar();
 
 		// Get selected routine from the dashboard
-		// this.autonomousCommand = this.container.getAutonomousCommand();
+		// this.autonomousCommand = RobotContainer.getInstance().getAutonomousCommand();
 
 		// schedule the autonomous command (example)
 		// if(this.autonomousCommand != null) {
@@ -125,14 +122,15 @@ public class Robot extends LoggedRobot {
 
 	@Override
 	public void autonomousPeriodic() {
+		final var rc = RobotContainer.getInstance();
 		if (Robot.commandToRun != null) {
-			// if (this.commandToRun.isFinished() && Robot.cont.drivetrain.limelightNote.hasValidTargets() && !commandHasFinished) {
+			// if (this.commandToRun.isFinished() && rc.drivetrain.limelightNote.hasValidTargets() && !commandHasFinished) {
 			if (Robot.commandToRun.isFinished()) {
 				//get new command to run, if we have one...
 				// how do we know if we have one?
 				//case 1: we have a target
-				
-				if (Robot.cont.drivetrain.limelightNote.hasValidTargets()) {
+
+				if (rc.drivetrain.limelightNote.hasValidTargets()) {
 					Robot.commandToRun = new IntakeGround(true).withTimeout(4);
 					Robot.needToLookOtherWay = false;
 				} else if (Robot.needToLookOtherWay) {
@@ -147,8 +145,8 @@ public class Robot extends LoggedRobot {
 				}
 				//case 2:
 			}
-		} 
-		Logger.recordOutput("Drivetrain/Auto/LimeLightHasValidTarget", Robot.cont.drivetrain.limelightNote.hasValidTargets());
+		}
+		Logger.recordOutput("Drivetrain/Auto/LimeLightHasValidTarget", rc.drivetrain.limelightNote.hasValidTargets());
 	}
 
 	@Override

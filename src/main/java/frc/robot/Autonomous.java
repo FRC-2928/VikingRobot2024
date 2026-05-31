@@ -293,7 +293,7 @@ public final class Autonomous {
 			new AutoOption(
 				new SequentialCommandGroup(
 					new LookForNote(Units.Radians.of(Math.PI/4)),
-					(Robot.cont.drivetrain.limelightNote.hasValidTargets() ?  new IntakeGround(true).withTimeout(4) : new LookForNote(Units.Radians.of(-Math.PI/2)))
+					(RobotContainer.getInstance().drivetrain.limelightNote.hasValidTargets() ?  new IntakeGround(true).withTimeout(4) : new LookForNote(Units.Radians.of(-Math.PI/2)))
 				),
 				new Pose2d()
 			)
@@ -328,7 +328,7 @@ public final class Autonomous {
 		final Pose2d initial = getTrajStartPose2d(Choreo.loadTrajectory(name));
 
 		return Commands.runOnce(() -> {
-			Robot.cont.drivetrain.resetPose(Autonomous.getPoseForAlliance(initial));
+			RobotContainer.getInstance().drivetrain.resetPose(Autonomous.getPoseForAlliance(initial));
 
 			Logger.recordOutput("Drivetrain/Auto/x0", initial.getX());
 			Logger.recordOutput("Drivetrain/Auto/y0", initial.getY());

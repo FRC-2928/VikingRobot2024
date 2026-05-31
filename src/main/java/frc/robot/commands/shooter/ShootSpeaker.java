@@ -13,12 +13,12 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.Tuning;
+import frc.robot.RobotContainer;import frc.robot.Tuning;
 import frc.robot.subsystems.ShooterIO.Demand;
 
 public class ShootSpeaker extends Command {
 	private static final PIDController pitch = new PIDController(0.75, 0, 0);
+	private final RobotContainer rc = RobotContainer.getInstance();
 
 	static {
 		SmartDashboard.putData(ShootSpeaker.pitch);
@@ -31,7 +31,7 @@ public class ShootSpeaker extends Command {
 	}
 
 	public ShootSpeaker(final boolean triggerFire, final Angle startAngle, final double timeout) {
-		this.addRequirements(Robot.cont.shooter);
+		this.addRequirements(rc.shooter);
 		this.mIsTeleopCommand = triggerFire;
 		this.rearAngle = startAngle;
 		this.timeout = timeout;
@@ -56,24 +56,24 @@ public class ShootSpeaker extends Command {
 	public void execute() {
 		// indicates if the robot is facing forward from a robot-oriented perspective (rather than field-oriented)
 		// note that we use cosine < 0 here since field-forward is away from our driver-station (which is where the speaker is)
-		final boolean facingForward = Robot.cont.drivetrain.getPose().getRotation().getCos() < 0;
+		final boolean facingForward = rc.drivetrain.getPose().getRotation().getCos() < 0;
 		// indicates if the shooter is currently facing (robot-oriented) forward
-		final boolean isShooterForward = Robot.cont.shooter.inputs.angle.in(Units.Degrees) - 90 < 0;
-		Robot.cont.shooter.io.runFlywheelsVelocity(Tuning.flywheelVelocity.get());
-		Robot.cont.drivetrain.limelightShooter.setPipeline(facingForward ? 0 : 1);
+		final boolean isShooterForward = rc.shooter.inputs.angle.in(Units.Degrees) - 90 < 0;
+		rc.shooter.io.runFlywheelsVelocity(Tuning.flywheelVelocity.get());
+		rc.drivetrain.limelightShooter.setPipeline(facingForward ? 0 : 1);
 
 		if(facingForward && isShooterForward) {
-			final boolean shooterLLSees = Robot.cont.drivetrain.limelightShooter.hasValidTargets();
-			final boolean rearLLSees = Robot.cont.drivetrain.limelightRear.hasValidTargets();
+			final boolean shooterLLSees = rc.drivetrain.limelightShooter.hasValidTargets();
+			final boolean rearLLSees = rc.drivetrain.limelightRear.hasValidTargets();
 			final boolean flywheelAtSpeed =
-				Robot.cont.shooter.inputs.flywheelSpeedA.in(Units.RotationsPerSecond)
+				rc.shooter.inputs.flywheelSpeedA.in(Units.RotationsPerSecond)
 					>= Tuning.flywheelVelocityThreshold.get();
 			final boolean pivotVelocityWithinThreshold =
-				Math.abs(Robot.cont.shooter.inputs.angleSpeed.in(Units.RotationsPerSecond))
+				Math.abs(rc.shooter.inputs.angleSpeed.in(Units.RotationsPerSecond))
 				< Constants.Shooter.pivotMaxVelocityShoot.in(Units.RotationsPerSecond);
 			// we should fire only if the driver wants to fire or the command doesn't require input (i.e., during auto)
-			final boolean demandFire = Robot.cont.driverOI.intake.getAsBoolean() || !this.mIsTeleopCommand;
-			final boolean overrideShoot = Robot.cont.operatorOI.overrideShoot.getAsBoolean();
+			final boolean demandFire = rc.driverOI.intake.getAsBoolean() || !this.mIsTeleopCommand;
+			final boolean overrideShoot = rc.operatorOI.overrideShoot.getAsBoolean();
 
 			Logger.recordOutput("Shooter/ShootSpeaker/ShooterLLSees", shooterLLSees);
 			Logger.recordOutput("Shooter/ShootSpeaker/RearLLSees", rearLLSees);
@@ -82,7 +82,7 @@ public class ShootSpeaker extends Command {
 					"Shooter/ShootSpeaker/PivotAngle",
 					Math
 						.abs(
-							Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset().in(Units.Degrees)
+							rc.drivetrain.limelightShooter.getTargetHorizontalOffset().in(Units.Degrees)
 						) < 1.25
 				);
 			Logger.recordOutput("Shooter/ShootSpeaker/FlywheelSpeed", flywheelAtSpeed);
@@ -90,7 +90,7 @@ public class ShootSpeaker extends Command {
 			Logger
 				.recordOutput(
 					"Shooter/ShootSpeaker/PivotVelocityDifference",
-					Math.abs(Robot.cont.shooter.inputs.angleSpeed.in(Units.RotationsPerSecond))
+					Math.abs(rc.shooter.inputs.angleSpeed.in(Units.RotationsPerSecond))
 					//- Constants.Shooter.pivotMaxVelocityShoot.in(Units.RotationsPerSecond)
 				);
 			Logger.recordOutput("Shooter/ShootSpeaker/DemandFire", demandFire);
@@ -98,15 +98,15 @@ public class ShootSpeaker extends Command {
 			Logger.recordOutput("Shooter/ShootSpeaker/FiredTime", this.firedTime != -1);
 
 			if(overrideShoot && demandFire) {
-				Robot.cont.shooter.io.runFeeder(Demand.Forward);
+				rc.shooter.io.runFeeder(Demand.Forward);
 				if(this.firedTime == -1) this.firedTime = Timer.getFPGATimestamp();
 			}
 
 			if(shooterLLSees) {
 				// pitch offset -- we use horizontal offset because the limelight is mounted sideways
-				final Angle pitchOffset = Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset();
+				final Angle pitchOffset = rc.drivetrain.limelightShooter.getTargetHorizontalOffset();
 				// yaw offset -- using vertical offset because the limelight is mounted sideways
-				final Angle yawOffset = Robot.cont.drivetrain.limelightShooter
+				final Angle yawOffset = rc.drivetrain.limelightShooter
 					.getTargetVerticalOffset()
 					.times(isShooterForward ? 1 : -1);
 
@@ -127,12 +127,12 @@ public class ShootSpeaker extends Command {
 				// 3a. Pass the rotation-only ChassisSpeeds to Drivetrain's robotToField method to transform it into field-relative speeds
 				// 4. Combine the translation-only and rotation-only speeds into a single ChassisSpeeds object
 				// 5. Finally, pass the combined ChassisSpeeds to the drivetrain for control
-				Robot.cont.drivetrain
+				rc.drivetrain
 					.driveFieldOriented(
 						this
-							.norot(Robot.cont.drivetrain.joystickSpeeds)
+							.norot(rc.drivetrain.joystickSpeeds)
 							.plus(
-								Robot.cont.drivetrain
+								rc.drivetrain
 									.robotToField(
 										new ChassisSpeeds(
 											0,
@@ -151,11 +151,11 @@ public class ShootSpeaker extends Command {
 				boolean isPivotPosThresholdMet = (Math.abs(pitchOffset.in(Units.Degrees)) >= Tuning.shootSpeakerPivotThreshold.get());
 				boolean hasShooterFired = (this.firedTime == -1 ? false : true);
 				if(isPivotPosThresholdMet && !hasShooterFired) {
-					Robot.cont.shooter.io
+					rc.shooter.io
 						.rotate(
 							Units.Rotations
 								.of(
-									Robot.cont.shooter.inputs.angle.in(Units.Rotations)
+									rc.shooter.inputs.angle.in(Units.Rotations)
 										+ ShootSpeaker.pitch
 											.calculate(
 												this.pow(pitchOffset.in(Units.Rotations), Tuning.shootSpeakerExponent.get())
@@ -167,7 +167,7 @@ public class ShootSpeaker extends Command {
 						(((flywheelAtSpeed && pivotVelocityWithinThreshold && yawOffset.in(Units.Degrees) < 10) || overrideShoot) && demandFire)
 							|| this.firedTime != -1
 					) {
-						Robot.cont.shooter.io.runFeeder(Demand.Forward);
+						rc.shooter.io.runFeeder(Demand.Forward);
 						if(this.firedTime == -1) this.firedTime = Timer.getFPGATimestamp();
 					}
 				}
@@ -177,30 +177,30 @@ public class ShootSpeaker extends Command {
 						"Shooter/ShootSpeaker/RearAlign",
 						this.targetRotationFeedforward
 							.calculate(
-								Robot.cont.drivetrain.limelightRear.getTargetHorizontalOffset().in(Units.Rotations)
+								rc.drivetrain.limelightRear.getTargetHorizontalOffset().in(Units.Rotations)
 							)
 					);
 
 				Logger
 					.recordOutput(
 						"Shooter/ShootSpeaker/txr",
-						Robot.cont.drivetrain.limelightRear.getTargetHorizontalOffset().in(Units.Degrees)
+						rc.drivetrain.limelightRear.getTargetHorizontalOffset().in(Units.Degrees)
 					);
 
 				// same auto-align as the previous case, but with the rear limelight's offsets...
-				Robot.cont.drivetrain
+				rc.drivetrain
 					.driveFieldOriented(
 						this
-							.norot(Robot.cont.drivetrain.joystickSpeeds)
+							.norot(rc.drivetrain.joystickSpeeds)
 							.plus(
-								Robot.cont.drivetrain
+								rc.drivetrain
 									.robotToField(
 										new ChassisSpeeds(
 											0,
 											0,
 											this.targetRotationFeedforward
 												.calculate(
-													Robot.cont.drivetrain.limelightRear
+													rc.drivetrain.limelightRear
 														.getTargetHorizontalOffset()
 														.in(Units.Rotations)
 												)
@@ -208,35 +208,35 @@ public class ShootSpeaker extends Command {
 									)
 							)
 					);
-				Robot.cont.shooter.io.rotate(this.rearAngle);
+				rc.shooter.io.rotate(this.rearAngle);
 			} else {
 				// shooter limelight doesn't have a target but we're facing the speaker -- rotate into position
 				// and begin target acquisition sequence
-				Robot.cont.drivetrain.driveFieldOriented(Robot.cont.drivetrain.joystickSpeeds);
-				Robot.cont.shooter.io.rotate(Constants.Shooter.readyShootFront);
+				rc.drivetrain.driveFieldOriented(rc.drivetrain.joystickSpeeds);
+				rc.shooter.io.rotate(Constants.Shooter.readyShootFront);
 			}
 		} else {
 			// we're not facing the speaker or the shooter is not facing the right way...
 			// either way, rotate the shooter into position
-			Robot.cont.drivetrain.driveFieldOriented(Robot.cont.drivetrain.joystickSpeeds);
-			Robot.cont.shooter.io.rotate(facingForward ? Constants.Shooter.readyShootFront : this.rearAngle);
+			rc.drivetrain.driveFieldOriented(rc.drivetrain.joystickSpeeds);
+			rc.shooter.io.rotate(facingForward ? Constants.Shooter.readyShootFront : this.rearAngle);
 		}
 
 		// timeout mechanism 
 		if(this.timeout > 0 && Timer.getFPGATimestamp() > this.startTime + this.timeout) {
-			Robot.cont.shooter.io.runFeeder(Demand.Forward);
+			rc.shooter.io.runFeeder(Demand.Forward);
 			if(this.firedTime == -1) this.firedTime = Timer.getFPGATimestamp();
 		}
 	}
 
 	@Override
 	public void end(final boolean interrupted) {
-		Robot.cont.shooter.io
+		rc.shooter.io
 			.rotate(
-				Robot.cont.shooter.inputs.holdingNote ? Constants.Shooter.readyDrive : Constants.Shooter.readyIntake
+				rc.shooter.inputs.holdingNote ? Constants.Shooter.readyDrive : Constants.Shooter.readyIntake
 			);
-		Robot.cont.shooter.io.runFlywheels(0);
-		Robot.cont.shooter.io.runFeeder(Demand.Halt);
+		rc.shooter.io.runFlywheels(0);
+		rc.shooter.io.runFeeder(Demand.Halt);
 	}
 
 	@Override

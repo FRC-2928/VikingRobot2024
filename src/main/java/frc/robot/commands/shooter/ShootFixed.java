@@ -10,11 +10,12 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.Tuning;
+import frc.robot.RobotContainer;import frc.robot.Tuning;
 import frc.robot.subsystems.ShooterIO.Demand;
 
 public class ShootFixed extends Command {
+	private final RobotContainer rc = RobotContainer.getInstance();
+
 	public ShootFixed(final boolean triggerFire) { this(triggerFire, 0); }
 
 	public ShootFixed(final boolean triggerFire, final double timeout) {
@@ -22,7 +23,7 @@ public class ShootFixed extends Command {
 	}
 
 	public ShootFixed(final Supplier<Angle> angle, final boolean triggerFire, final double timeout) {
-		this.addRequirements(Robot.cont.shooter);
+		this.addRequirements(rc.shooter);
 		this.angle = angle;
 		this.triggerFire = triggerFire;
 		this.timeout = timeout;
@@ -44,28 +45,28 @@ public class ShootFixed extends Command {
 	@Override
 	public void execute() {
 		final Angle angle = this.angle.get();
-		Robot.cont.shooter.io.runFlywheelsVelocity(Tuning.flywheelVelocity.get());
-		Robot.cont.shooter.io.rotate(angle);
+		rc.shooter.io.runFlywheelsVelocity(Tuning.flywheelVelocity.get());
+		rc.shooter.io.rotate(angle);
 
 		final boolean pivotAngle = Math
-			.abs(Robot.cont.shooter.inputs.angle.in(Units.Degrees) - angle.in(Units.Degrees)) < 1.25;
-		final boolean flywheelSpeed = Robot.cont.shooter.inputs.flywheelSpeedA
+			.abs(rc.shooter.inputs.angle.in(Units.Degrees) - angle.in(Units.Degrees)) < 1.25;
+		final boolean flywheelSpeed = rc.shooter.inputs.flywheelSpeedA
 			.in(Units.RotationsPerSecond) >= Tuning.flywheelVelocityThreshold.get();
 		final boolean pivotVelocity = Math
 			.abs(
-				Robot.cont.shooter.inputs.angleSpeed.in(Units.RotationsPerSecond)
+				rc.shooter.inputs.angleSpeed.in(Units.RotationsPerSecond)
 			) < Constants.Shooter.pivotMaxVelocityShoot.in(Units.RotationsPerSecond);
 		Logger
 			.recordOutput(
 				"Shooter/ShootSpeaker/PivotAngle",
-				Math.abs(Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset().in(Units.Degrees)) < 1.25
+				Math.abs(rc.drivetrain.limelightShooter.getTargetHorizontalOffset().in(Units.Degrees)) < 1.25
 			);
 		Logger.recordOutput("Shooter/ShootSpeaker/FlywheelSpeed", flywheelSpeed);
 		Logger.recordOutput("Shooter/ShootSpeaker/PivotVelocity", pivotVelocity);
 		Logger
 			.recordOutput(
 				"Shooter/ShootSpeaker/PivotVelocityDifference",
-				Math.abs(Robot.cont.shooter.inputs.angleSpeed.in(Units.RotationsPerSecond))
+				Math.abs(rc.shooter.inputs.angleSpeed.in(Units.RotationsPerSecond))
 				//- Constants.Shooter.pivotMaxVelocityShoot.in(Units.RotationsPerSecond)
 			);
 		Logger.recordOutput("Shooter/ShootSpeaker/Fired", this.fired != -1);
@@ -75,19 +76,19 @@ public class ShootFixed extends Command {
 				|| this.fired != -1
 				|| (this.timeout > 0 && Timer.getFPGATimestamp() > this.startTime + this.timeout)
 		) {
-			Robot.cont.shooter.io.runFeeder(Demand.Forward);
+			rc.shooter.io.runFeeder(Demand.Forward);
 			if(this.fired == -1) this.fired = Timer.getFPGATimestamp();
 		}
 	}
 
 	@Override
 	public void end(final boolean interrupted) {
-		Robot.cont.shooter.io
+		rc.shooter.io
 			.rotate(
-				Robot.cont.shooter.inputs.holdingNote ? Constants.Shooter.readyDrive : Constants.Shooter.readyIntake
+				rc.shooter.inputs.holdingNote ? Constants.Shooter.readyDrive : Constants.Shooter.readyIntake
 			);
-		Robot.cont.shooter.io.runFlywheels(0);
-		Robot.cont.shooter.io.runFeeder(Demand.Halt);
+		rc.shooter.io.runFlywheels(0);
+		rc.shooter.io.runFeeder(Demand.Halt);
 	}
 
 	@Override

@@ -5,17 +5,16 @@ import com.ctre.phoenix6.hardware.CANcoder;
 
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import frc.robot.Robot;
-import frc.robot.subsystems.ShooterIOReal;
+import frc.robot.RobotContainer;import frc.robot.subsystems.ShooterIOReal;
 
 public class ZeroPivot extends InstantCommand {
 	public ZeroPivot() {
 		super(() -> {
-			final CANcoder enc = ((ShooterIOReal) Robot.cont.shooter.io).encoder;
+			final CANcoder enc = ((ShooterIOReal) RobotContainer.getInstance().shooter.io).encoder;
 			final CANcoderConfiguration cfg = new CANcoderConfiguration();
 			enc.getConfigurator().refresh(cfg);
 			cfg.MagnetSensor.MagnetOffset = cfg.MagnetSensor.MagnetOffset
-				- Robot.cont.shooter.inputs.angle.in(Units.Rotations);
+				- RobotContainer.getInstance().shooter.inputs.angle.in(Units.Rotations);
 			enc.getConfigurator().apply(cfg);
 		});
 	}

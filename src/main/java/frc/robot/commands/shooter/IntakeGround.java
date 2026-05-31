@@ -6,13 +6,13 @@ import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.oi.BaseOI;
+import frc.robot.RobotContainer;import frc.robot.oi.BaseOI;
 import frc.robot.subsystems.ShooterIO.Demand;
 import org.littletonrobotics.junction.Logger;
 
 public class IntakeGround extends Command {
 	public static double lastTime = 0; // this is a bad way to do this but its necessary for right now, please do real path planning in the future
+	private final RobotContainer rc = RobotContainer.getInstance();
 
 	public IntakeGround(final boolean correction) {
 		this.haptics.type = RumbleType.kBothRumble;
@@ -23,11 +23,11 @@ public class IntakeGround extends Command {
 
 		this.correction = correction;
 
-		this.addRequirements(Robot.cont.shooter);
-		if(correction) this.addRequirements(Robot.cont.drivetrain);
+		this.addRequirements(rc.shooter);
+		if(correction) this.addRequirements(rc.drivetrain);
 	}
 
-	private final BaseOI.Haptics haptics = new BaseOI.Haptics(Robot.cont.driverOI.hid);
+	private final BaseOI.Haptics haptics = new BaseOI.Haptics(rc.driverOI.hid);
 
 	public final boolean correction;
 
@@ -35,22 +35,22 @@ public class IntakeGround extends Command {
 	public void execute() {
 		final boolean pivotReady = Math
 			.abs(
-				Robot.cont.shooter.inputs.angle.in(Units.Degrees) - Constants.Shooter.intakeGround.in(Units.Degrees)
+				rc.shooter.inputs.angle.in(Units.Degrees) - Constants.Shooter.intakeGround.in(Units.Degrees)
 			) <= 1.5;
 
-		Robot.cont.shooter.io.rotate(Constants.Shooter.intakeGround);
-		Robot.cont.shooter.io.runFlywheels(-0.35);
-		Robot.cont.shooter.io.runFeeder(Demand.Reverse);
-		Robot.cont.shooter.io.runIntake(pivotReady ? Demand.Forward : Demand.Halt);
+		rc.shooter.io.rotate(Constants.Shooter.intakeGround);
+		rc.shooter.io.runFlywheels(-0.35);
+		rc.shooter.io.runFeeder(Demand.Reverse);
+		rc.shooter.io.runIntake(pivotReady ? Demand.Forward : Demand.Halt);
 
 		if(this.correction)
-			Robot.cont.drivetrain.driveFieldOriented(
-				Robot.cont.drivetrain.joystickSpeeds
+			rc.drivetrain.driveFieldOriented(
+				rc.drivetrain.joystickSpeeds
 					.plus(
-						Robot.cont.drivetrain.robotToField(
+						rc.drivetrain.robotToField(
 							new ChassisSpeeds(
 								this.calculateSpeedX(),
-								Robot.cont.drivetrain.limelightNote
+								rc.drivetrain.limelightNote
 									.getTargetHorizontalOffset()
 									.in(Units.Rotations)
 									* 10,
@@ -64,27 +64,27 @@ public class IntakeGround extends Command {
 		
 	}
 	public double calculateSpeedX(){
-		Logger.recordOutput("Drivetrain/auto/SpeedXIntakeGroun",(-10/(Math.abs(Robot.cont.drivetrain.limelightNote.getTargetHorizontalOffset().in(Units.Degrees))+1)));
+		Logger.recordOutput("Drivetrain/auto/SpeedXIntakeGroun",(-10/(Math.abs(rc.drivetrain.limelightNote.getTargetHorizontalOffset().in(Units.Degrees))+1)));
 		return( 
-				(-10/(Math.abs(Robot.cont.drivetrain.limelightNote.getTargetHorizontalOffset().in(Units.Degrees))+1))
+				(-10/(Math.abs(rc.drivetrain.limelightNote.getTargetHorizontalOffset().in(Units.Degrees))+1))
 		);
 	}
 	
 	@Override
 	public void end(final boolean interrupted) {
-		Robot.cont.shooter.io
+		rc.shooter.io
 			.rotate(
-				Robot.cont.shooter.inputs.holdingNote ? Constants.Shooter.readyDrive : Constants.Shooter.readyIntake
+				rc.shooter.inputs.holdingNote ? Constants.Shooter.readyDrive : Constants.Shooter.readyIntake
 			);
-		Robot.cont.shooter.io.runFlywheels(0);
-		Robot.cont.shooter.io.runFeeder(Demand.Halt);
-		Robot.cont.shooter.io.runIntake(Demand.Halt);
+		rc.shooter.io.runFlywheels(0);
+		rc.shooter.io.runFeeder(Demand.Halt);
+		rc.shooter.io.runIntake(Demand.Halt);
 
-		Robot.cont.drivetrain.driveFieldOriented(new ChassisSpeeds());
+		rc.drivetrain.driveFieldOriented(new ChassisSpeeds());
 
 		this.haptics.stop();
 	}
 
 	@Override
-	public boolean isFinished() { return Robot.cont.shooter.inputs.holdingNote; }
+	public boolean isFinished() { return rc.shooter.inputs.holdingNote; }
 }

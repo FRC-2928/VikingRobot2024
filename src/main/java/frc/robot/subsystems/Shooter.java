@@ -8,8 +8,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.Tuning;
+import frc.robot.RobotContainer;import frc.robot.Tuning;
 import frc.robot.subsystems.ShooterIO.Demand;
 import frc.robot.subsystems.ShooterIO.ShooterIOInputs;
 import frc.robot.subsystems.shooter.ShooterGoal;
@@ -173,12 +172,13 @@ public class Shooter extends SubsystemBase {
     }
 
     private void applyShootSpeaker() {
+        final var rc = RobotContainer.getInstance();
         // cosine < 0 → robot is facing away from the driver station (toward the speaker)
-        final boolean facingForward    = Robot.cont.drivetrain.getPose().getRotation().getCos() < 0;
+        final boolean facingForward    = rc.drivetrain.getPose().getRotation().getCos() < 0;
         final boolean isShooterForward = inputs.angle.in(Units.Degrees) - 90 < 0;
 
         io.runFlywheelsVelocity(Tuning.flywheelVelocity.get());
-        Robot.cont.drivetrain.limelightShooter.setPipeline(facingForward ? 0 : 1);
+        rc.drivetrain.limelightShooter.setPipeline(facingForward ? 0 : 1);
 
         final boolean flywheelAtSpeed =
             inputs.flywheelSpeedA.in(Units.RotationsPerSecond) >= Tuning.flywheelVelocityThreshold.get();
@@ -187,10 +187,10 @@ public class Shooter extends SubsystemBase {
                 < Constants.Shooter.pivotMaxVelocityShoot.in(Units.RotationsPerSecond);
 
         if (facingForward && isShooterForward) {
-            if (Robot.cont.drivetrain.limelightShooter.hasValidTargets()) {
+            if (rc.drivetrain.limelightShooter.hasValidTargets()) {
                 // limelight is mounted sideways: horizontal offset → pitch, vertical offset → yaw
-                final var pitchOffset = Robot.cont.drivetrain.limelightShooter.getTargetHorizontalOffset();
-                final var yawOffset = Robot.cont.drivetrain.limelightShooter
+                final var pitchOffset = rc.drivetrain.limelightShooter.getTargetHorizontalOffset();
+                final var yawOffset = rc.drivetrain.limelightShooter
                     .getTargetVerticalOffset()
                     .times(isShooterForward ? 1 : -1);
 
@@ -219,7 +219,7 @@ public class Shooter extends SubsystemBase {
                 io.rotate(Constants.Shooter.readyShootFront);
             }
 
-        } else if (!facingForward && Robot.cont.drivetrain.limelightRear.hasValidTargets()) {
+        } else if (!facingForward && rc.drivetrain.limelightRear.hasValidTargets()) {
             io.rotate(Constants.Shooter.readyShootRear);
             if ((flywheelAtSpeed && pivotVelocityOk) || firedTime != -1) {
                 io.runFeeder(Demand.Forward);

@@ -24,22 +24,23 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.utils.Alert;
+import frc.robot.RobotContainer;import frc.robot.utils.Alert;
 
 public class Diagnostics extends SubsystemBase {
 	public final class Release extends Command {
-		public Release() { this.addRequirements(Robot.cont.drivetrain, Robot.cont.shooter, Robot.cont.climber); }
+		private final RobotContainer rc = RobotContainer.getInstance();
+
+		public Release() { this.addRequirements(rc.drivetrain, rc.shooter, rc.climber); }
 
 		@Override
 		public void initialize() {
 			for(int i = 0; i < 4; i++) {
-				Robot.cont.drivetrain.getModule(i).getDriveMotor().setNeutralMode(NeutralModeValue.Coast);
-				Robot.cont.drivetrain.getModule(i).getSteerMotor().setNeutralMode(NeutralModeValue.Coast);
+				rc.drivetrain.getModule(i).getDriveMotor().setNeutralMode(NeutralModeValue.Coast);
+				rc.drivetrain.getModule(i).getSteerMotor().setNeutralMode(NeutralModeValue.Coast);
 			}
 
-			((ShooterIOReal) Robot.cont.shooter.io).pivot.setNeutralMode(NeutralModeValue.Coast);
-			final ClimberIOReal climber = ((ClimberIOReal) Robot.cont.climber.io);
+			((ShooterIOReal) rc.shooter.io).pivot.setNeutralMode(NeutralModeValue.Coast);
+			final ClimberIOReal climber = ((ClimberIOReal) rc.climber.io);
 			climber.actuator.setNeutralMode(NeutralModeValue.Coast);
 			//climber.lock.set(0);
 
@@ -50,12 +51,12 @@ public class Diagnostics extends SubsystemBase {
 		@Override
 		public void end(final boolean interrupted) {
 			for(int i = 0; i < 4; i++) {
-				Robot.cont.drivetrain.getModule(i).getDriveMotor().setNeutralMode(NeutralModeValue.Brake);
-				Robot.cont.drivetrain.getModule(i).getSteerMotor().setNeutralMode(NeutralModeValue.Brake);
+				rc.drivetrain.getModule(i).getDriveMotor().setNeutralMode(NeutralModeValue.Brake);
+				rc.drivetrain.getModule(i).getSteerMotor().setNeutralMode(NeutralModeValue.Brake);
 			}
 
-			((ShooterIOReal) Robot.cont.shooter.io).pivot.setNeutralMode(NeutralModeValue.Brake);
-			final ClimberIOReal climber = ((ClimberIOReal) Robot.cont.climber.io);
+			((ShooterIOReal) rc.shooter.io).pivot.setNeutralMode(NeutralModeValue.Brake);
+			final ClimberIOReal climber = ((ClimberIOReal) rc.climber.io);
 			climber.actuator.setNeutralMode(NeutralModeValue.Brake);
 			//climber.lock.set(0);
 
@@ -77,7 +78,7 @@ public class Diagnostics extends SubsystemBase {
 		public int ms;
 		public long start = 0;
 
-		public void play() { Robot.cont.fxm.fx.sound(LimelightFX.WaveForm.Square, this.freq, this.ms, 0, 1); }
+		public void play() { RobotContainer.getInstance().fxm.fx.sound(LimelightFX.WaveForm.Square, this.freq, this.ms, 0, 1); }
 	}
 
 	private static final byte suffixRadio = 1;
@@ -118,9 +119,10 @@ public class Diagnostics extends SubsystemBase {
 				System.out.println("Diagnostics: Cannot execute command ZeroPivot outside of Test mode");
 				return;
 			}
+			final var rc = RobotContainer.getInstance();
 			System.out
-				.println("Diagnostics: Pivot zeroed (was " + Robot.cont.shooter.inputs.angle.in(Units.Degrees) + ")");
-			final CANcoder enc = ((ShooterIOReal) Robot.cont.shooter.io).encoder;
+				.println("Diagnostics: Pivot zeroed (was " + rc.shooter.inputs.angle.in(Units.Degrees) + ")");
+			final CANcoder enc = ((ShooterIOReal) rc.shooter.io).encoder;
 			final CANcoderConfiguration cfg = new CANcoderConfiguration();
 			enc.getConfigurator().refresh(cfg);
 			cfg.MagnetSensor.MagnetOffset = 0;
@@ -183,9 +185,11 @@ public class Diagnostics extends SubsystemBase {
 
 			final boolean invalidAutoRoutine;
 
+			final var rc = RobotContainer.getInstance();
+
 			String name;
 			try {
-				name = (String) this.loggedDashboardChooserSelectedValue.get(Robot.cont.autonomousChooser);
+				name = (String) this.loggedDashboardChooserSelectedValue.get(rc.autonomousChooser);
 				if(name == null) name = "<none>";
 				invalidAutoRoutine = !name.contains("[comp]");
 			} catch(final Exception e) {
@@ -193,9 +197,9 @@ public class Diagnostics extends SubsystemBase {
 			}
 
 			final double startingConfigurationAngleDifference = Math
-				.abs(Robot.cont.shooter.inputs.angle.minus(Constants.Shooter.startingConfiguration).in(Units.Degrees));
+				.abs(rc.shooter.inputs.angle.minus(Constants.Shooter.startingConfiguration).in(Units.Degrees));
 			final boolean shooterAngle = startingConfigurationAngleDifference > 6;
-			final boolean notePossession = !Robot.cont.shooter.inputs.holdingNote;
+			final boolean notePossession = !rc.shooter.inputs.holdingNote;
 			final boolean badVoltage = RobotController.getBatteryVoltage() < 12;
 
 			alertInvalidAutoRoutine.text = "Autonomous routine '" + name + "' not ready for competition!";
@@ -205,7 +209,7 @@ public class Diagnostics extends SubsystemBase {
 				+ "deg off)";
 			alertShooterAngle.active = shooterAngle;
 			alertNotePossession.active = notePossession;
-			alertClimberHome.active = Robot.cont.climber.inputs.home;
+			alertClimberHome.active = rc.climber.inputs.home;
 			alertBadVoltage.text = "Battery Voltage is "
 				+ RobotController.getBatteryVoltage()
 				+ "V, recommended to be at least 12V";
