@@ -309,8 +309,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         final double horizontalOffsetRot = limelightNote.getTargetHorizontalOffset().in(Units.Rotations);
 
         final ChassisSpeeds correction = robotToField(new ChassisSpeeds(
-            -10.0 / (Math.abs(horizontalOffsetDeg) + 1),
-            horizontalOffsetRot * 10,
+            2.0 / (Math.abs(horizontalOffsetDeg) + 1),
+            -horizontalOffsetRot * 10,
             0
         ));
 
