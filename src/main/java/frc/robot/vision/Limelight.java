@@ -49,7 +49,7 @@ public class Limelight {
 
 	public int getNumberOfAprilTags() {
 		final LimelightResults reultsOfJson = LimelightHelpers.getLatestResults(this.limelightName);
-		return reultsOfJson.targetingResults.targets_Fiducials.length;
+		return reultsOfJson.targets_Fiducials.length;
 	}
 
 	// Target Area (0% of image to 100% of image)
@@ -91,4 +91,16 @@ public class Limelight {
 
 	// 3D transform of the primary in-view AprilTag in the coordinate system of the Camera (array (6))
 	public Pose3d getCameraTagPose3d() { return LimelightHelpers.getTargetPose3d_CameraSpace(this.limelightName); }
+
+	public String getName() { return this.limelightName; }
+
+	// MegaTag1 pose estimate (blue-origin WPI field coordinates)
+	public LimelightHelpers.PoseEstimate getMT1PoseEstimate() {
+		return LimelightHelpers.getBotPoseEstimate_wpiBlue(this.limelightName);
+	}
+
+	// MegaTag2 pose estimate — requires SetRobotOrientation() called first each cycle
+	public LimelightHelpers.PoseEstimate getMT2PoseEstimate() {
+		return LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(this.limelightName);
+	}
 }

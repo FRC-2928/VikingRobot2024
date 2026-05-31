@@ -51,6 +51,7 @@ public class Robot extends LoggedRobot {
 		}
 
 		Logger.start();
+		LoggedPowerDistribution.getInstance(Constants.CAN.Misc.pdh, ModuleType.kRev);
 		LiveWindow.disableAllTelemetry();
 
 		RobotContainer.getInstance();
@@ -61,7 +62,6 @@ public class Robot extends LoggedRobot {
 	@Override
 	public void robotPeriodic() {
 		CommandScheduler.getInstance().run();
-		LoggedPowerDistribution.getInstance(Constants.CAN.Misc.pdh, ModuleType.kRev);
 	}
 
 	// DISABLED //

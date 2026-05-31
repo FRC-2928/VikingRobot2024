@@ -298,6 +298,9 @@ public class Constants {
 			.withKV(0.015)
 			.withKA(0);
 
+		/** Seconds from 0 to full closed-loop output. Limits jerk at pivot startup to prevent belt skip. */
+		public static final double pivotRampSeconds = 0.25;
+
 		public static final PIDValues targetRotationController = new PIDValues(0.3, 0, 0, 0);
 
 		public static final FlywheelConfiguration flywheels = FlywheelConfiguration.greenBane;

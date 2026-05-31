@@ -42,6 +42,7 @@ public class RobotContainer {
 
 	public static boolean ledState = false;
 	private RobotContainer() {
+		sInstance = this; // assign early so re-entrant getInstance() calls (e.g. from auto command constructors) return this instance
 
 		Tuning.flywheelVelocity.get(); // load the class to put the tuning controls on the dashboard
 

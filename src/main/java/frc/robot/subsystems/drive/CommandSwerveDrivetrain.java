@@ -5,6 +5,7 @@ import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
@@ -34,6 +35,7 @@ import frc.robot.Constants;
 import frc.robot.subsystems.drive.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.superstructure.SuperstructureContext;
 import frc.robot.vision.Limelight;
+import frc.robot.vision.LimelightHelpers;
 
 /**
  * Swerve drivetrain subsystem.
@@ -86,8 +88,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     // ── Vision standard deviations ───────────────────────────────────────────
 
+    // MT1: lower trust, heading unconstrained by gyro
     private static final Matrix<N3, N1> VISION_STD_DEVS =
         VecBuilder.fill(0.7, 0.7, 9999999);
+    // MT2: slightly higher XY trust because gyro constrains heading error
+    private static final Matrix<N3, N1> MT2_STD_DEVS =
+        VecBuilder.fill(0.5, 0.5, 9999999);
 
     // Proportional gain converting limelight offset (rotations) → rotational rate scalar.
     // Output is clamped to ±0.125 before scaling by maxAngularVelocity.
@@ -152,6 +158,15 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     private SysIdRoutine m_sysIdRoutineToApply = m_sysIdRoutineTranslation;
 
+    // ── Slip detection ───────────────────────────────────────────────────────
+
+    private static final double SLIP_SPEED_ERROR_THRESHOLD_MPS  = 0.5;   // m/s
+    private static final double SLIP_ACCEL_DISCREPANCY_THRESHOLD = 2.0;  // m/s²
+
+    // Pigeon2 horizontal acceleration signals (in g, converted to m/s² when read)
+    private final BaseStatusSignal[] mPigeonAccelSignals = new BaseStatusSignal[2];
+    private ChassisSpeeds mPrevChassisSpeeds = new ChassisSpeeds();
+
     // ── Limelights ───────────────────────────────────────────────────────────
 
     public final Limelight limelightNote    = new Limelight("limelight-note");
@@ -181,6 +196,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         CommandScheduler.getInstance().registerSubsystem(this);
         setVisionMeasurementStdDevs(VISION_STD_DEVS);
+
+        // Capture Pigeon2 horizontal acceleration signals for slip detection.
+        // These are not part of the odometry signal set, so set their frequency explicitly.
+        var pigeon = getPigeon2();
+        mPigeonAccelSignals[0] = pigeon.getAccelerationX();
+        mPigeonAccelSignals[1] = pigeon.getAccelerationY();
+        BaseStatusSignal.setUpdateFrequencyForAll(100, mPigeonAccelSignals);
     }
 
     // ── Goal API ──────────────────────────────────────────────────────────────
@@ -231,6 +253,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         // Snapshot state once per cycle for thread safety — all reads use this copy
         mCurrentSwerveState = getState();
+
+        updateVisionPose();
+        computeAndLogSlipMetrics();
 
         systemState = handleStateTransition();
         applyState();
@@ -442,6 +467,84 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     public Command sysIdDynamic(SysIdRoutine.Direction direction) {
         return m_sysIdRoutineToApply.dynamic(direction);
+    }
+
+    // ── Slip detection ────────────────────────────────────────────────────────
+
+    private static final double G_TO_MPS2 = 9.81;
+
+    private void computeAndLogSlipMetrics() {
+        // Per-module speed error: actual wheel speed (encoder) minus commanded target.
+        // A positive error means the wheel is spinning faster than commanded — a slip signature.
+        var actual  = mCurrentSwerveState.ModuleStates;
+        var targets = mCurrentSwerveState.ModuleTargets;
+
+        double[] speedErrors  = new double[4];
+        double   maxSpeedError = 0.0;
+
+        for (int i = 0; i < 4; i++) {
+            double error = actual[i].speedMetersPerSecond - targets[i].speedMetersPerSecond;
+            speedErrors[i] = error;
+            double absError = Math.abs(error);
+            if (absError > maxSpeedError) maxSpeedError = absError;
+        }
+
+        // Expected acceleration: derived from change in odometry-based chassis speeds.
+        // If wheels slip, the encoders overcount rotation, so this value will be inflated.
+        var    cur              = mCurrentSwerveState.Speeds;
+        double dvx              = cur.vxMetersPerSecond - mPrevChassisSpeeds.vxMetersPerSecond;
+        double dvy              = cur.vyMetersPerSecond - mPrevChassisSpeeds.vyMetersPerSecond;
+        double expectedAccel    = Math.hypot(dvx, dvy) / 0.02;
+        mPrevChassisSpeeds      = cur;
+
+        // Measured acceleration: Pigeon2 accelerometer (horizontal axes only, gravity-free).
+        // This reflects actual robot body acceleration regardless of wheel behavior.
+        BaseStatusSignal.refreshAll(mPigeonAccelSignals);
+        double pigeonAxMps2  = mPigeonAccelSignals[0].getValueAsDouble() * G_TO_MPS2;
+        double pigeonAyMps2  = mPigeonAccelSignals[1].getValueAsDouble() * G_TO_MPS2;
+        double measuredAccel = Math.hypot(pigeonAxMps2, pigeonAyMps2);
+
+        // Discrepancy: large positive value means encoders report more acceleration than
+        // the IMU measured — the classic wheel slip fingerprint.
+        double accelDiscrepancy = expectedAccel - measuredAccel;
+        boolean anySlipping = maxSpeedError   > SLIP_SPEED_ERROR_THRESHOLD_MPS
+                           && accelDiscrepancy > SLIP_ACCEL_DISCREPANCY_THRESHOLD;
+
+        Logger.recordOutput("Drive/Slip/SpeedErrors",        speedErrors);
+        Logger.recordOutput("Drive/Slip/MaxSpeedError",      maxSpeedError);
+        Logger.recordOutput("Drive/Slip/ExpectedAccel",      expectedAccel);
+        Logger.recordOutput("Drive/Slip/MeasuredAccel",      measuredAccel);
+        Logger.recordOutput("Drive/Slip/AccelDiscrepancy",   accelDiscrepancy);
+        Logger.recordOutput("Drive/Slip/AnySlipping",        anySlipping);
+    }
+
+    // ── Vision pose fusion ────────────────────────────────────────────────────
+
+    private void updateVisionPose() {
+        // MegaTag2 requires the robot gyro heading pushed to the Limelight every cycle.
+        // Limelight 3G has no internal IMU, so it relies on this for MT2.
+        double yawDeg     = mCurrentSwerveState.Pose.getRotation().getDegrees();
+        double yawRateDps = mCurrentSwerveState.Speeds.omegaRadiansPerSecond * (180.0 / Math.PI);
+        LimelightHelpers.SetRobotOrientation(
+            limelightRear.getName(), yawDeg, yawRateDps, 0.0, 0.0, 0.0, 0.0);
+
+        LimelightHelpers.PoseEstimate mt1 = limelightRear.getMT1PoseEstimate();
+        LimelightHelpers.PoseEstimate mt2 = limelightRear.getMT2PoseEstimate();
+
+        // Log both estimates every cycle so AdvantageScope always has the key.
+        // Fall back to origin pose when no estimate is available so the log key is stable.
+        Logger.recordOutput("Vision/Rear/MT1Pose",
+            (mt1 != null && mt1.tagCount > 0) ? mt1.pose : new Pose2d());
+        Logger.recordOutput("Vision/Rear/MT2Pose",
+            (mt2 != null && mt2.tagCount > 0) ? mt2.pose : new Pose2d());
+        Logger.recordOutput("Vision/Rear/MT1TagCount", mt1 != null ? mt1.tagCount : 0);
+        Logger.recordOutput("Vision/Rear/MT2TagCount", mt2 != null ? mt2.tagCount : 0);
+
+        // Fuse MT2 only. Reject if no tags visible or robot spinning too fast.
+        if (mt2 == null || mt2.tagCount == 0) return;
+        if (Math.abs(yawRateDps) > 360.0)     return;
+
+        addVisionMeasurement(mt2.pose, mt2.timestampSeconds, MT2_STD_DEVS);
     }
 
     // ── Vision measurement overrides (FPGA timestamp correction) ─────────────

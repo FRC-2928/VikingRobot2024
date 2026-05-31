@@ -61,10 +61,12 @@ public class ShooterIOReal implements ShooterIO {
 
 		pivot.Slot0 = Slot0Configs.from(Constants.Shooter.pivotConfig);
 
+		pivot.ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = Constants.Shooter.pivotRampSeconds;
+
 		pivot.Audio = Constants.talonFXAudio;
+		pivot.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
 		this.pivot.getConfigurator().apply(pivot);
-		this.pivot.setNeutralMode(NeutralModeValue.Brake);
 		// this.pivot.setInverted(false);
 
 		final TalonFXConfiguration flywheels = new TalonFXConfiguration();

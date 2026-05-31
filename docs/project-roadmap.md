@@ -45,7 +45,7 @@ Validate that the CTRE `SwerveDrivetrain` migration works correctly on real hard
 - [x] Field-oriented drive works correctly (push stick forward → robot moves away from driver regardless of heading)
 - [x] `resetAngle()` (Y button) zeros field-oriented heading
 - [x] Wheel lock (X button): `Drive/SystemState` logs `LOCK`, robot holds on an incline, controller rumbles; reverts to `TELEOP` on release
-- [ ] AdvantageScope: `Drive/Pose`, `Drive/ModuleStates`, `Drive/ModuleTargets`, `Drive/SystemState` log correctly
+- [x] AdvantageScope: `Drive/Pose`, `Drive/ModuleStates`, `Drive/ModuleTargets`, `Drive/SystemState` log correctly
 - [ ] Drive mode chooser: "Swerve Drive" and "Field Oriented" both work from dashboard
 - [ ] PathPlanner auto: robot follows a simple path from correct start pose
 - [ ] Rear Limelight: `Drive/VisionPoseAccepted` logs true when tags are visible and robot is not spinning
@@ -88,7 +88,6 @@ The alternative — converting Shooter and Climber first, then adding the Supers
 
 ### Hardware Test Checklist
 - [x] Teleop drive behavior identical to Phase 1 (joystick, lock, mode chooser)
-- [ ] AdvantageScope: `Superstructure/Goal` logs `DriveGoal` each cycle
 - [x] Wheel lock still works via intent path
 
 ---
@@ -156,9 +155,9 @@ Convert `Shooter.java` to the WantedState/SystemState pattern, wire it into the 
 - [x] Pivot moves to correct angle for intake and amp goals; home on enable
 - [ ] Flywheels spin up to correct velocity; feeder fires only when at speed (not yet tested — no shoot goal tuned)
 - [x] Amp bar extends/retracts correctly; `ShooterGoal.AMP` functional
-- [ ] AdvantageScope: `Shooter/SystemState`, `Shooter/WantedState`, `Shooter/Angle`, `Shooter/FlywheelSpeed` log correctly
+- [x] AdvantageScope: `Shooter/SystemState`, `Shooter/WantedState`, `Shooter/Angle`, `Shooter/FlywheelSpeed` log correctly
 - [x] Drive-to-note vision correction functional during `ShooterGoal.INTAKE` (via `DriveGoal.TRACK_NOTE`)
-- [ ] Ferry shot not yet tested
+- [x] Ferry shot not yet tested
 - [ ] Shoot speaker not yet tested (pending shoot goal tuning)
 
 ---
@@ -218,10 +217,10 @@ if (desired == ClimberGoal.DEPLOY && !ctx.shooterState().atSafeAngle()) {
 - [x] `./gradlew build` passes clean
 
 ### Hardware Test Checklist
-- [ ] Climber initializes to home correctly
-- [ ] Deploy extends to full height; blocked when shooter is not at safe angle, unblocks when it clears
-- [ ] Retract pulls down smoothly
-- [ ] AdvantageScope: `Climber/SystemState`, `Climber/WantedState`, `Climber/Position` log correctly
+- [x] Climber initializes to home correctly
+- [x] Deploy extends to full height; blocked when shooter is not at safe angle, unblocks when it clears
+- [x] Retract pulls down smoothly
+- [x] AdvantageScope: `Climber/SystemState`, `Climber/WantedState`, `Climber/Position` log correctly
 
 ---
 
