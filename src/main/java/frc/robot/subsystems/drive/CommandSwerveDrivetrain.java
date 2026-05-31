@@ -13,7 +13,6 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -90,8 +89,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private static final Matrix<N3, N1> VISION_STD_DEVS =
         VecBuilder.fill(0.7, 0.7, 9999999);
 
-    // Feedforward for limelight-based rotational correction during AIM_SPEAKER.
-    private static final SimpleMotorFeedforward aimFF = new SimpleMotorFeedforward(0, 5);
+    // Proportional gain converting limelight offset (rotations) → rotational rate scalar.
+    // Output is clamped to ±0.125 before scaling by maxAngularVelocity.
+    private static final double AIM_ROTATION_GAIN = 5.0;
 
     // ── Operator perspective ─────────────────────────────────────────────────
 
@@ -269,6 +269,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     // ── AIM_SPEAKER ──────────────────────────────────────────────────────────
 
+    // TODO: facingForward check uses blue-origin heading (cos < 0 = facing blue wall).
+    // This is only correct for blue alliance. Fixing requires the alliance-rotation
+    // work documented in docs/architecture/alliance-rotation-notes.md.
     private void applyAimSpeaker() {
         final boolean facingForward = mCurrentSwerveState.Pose.getRotation().getCos() < 0;
         final ChassisSpeeds joystick = computeJoystickSpeeds();
@@ -276,10 +279,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         final double rotCorrection;
         if (facingForward && limelightShooter.hasValidTargets()) {
             final double verticalOffset = limelightShooter.getTargetVerticalOffset().in(Units.Rotations);
-            rotCorrection = MathUtil.clamp(aimFF.calculate(verticalOffset), -0.125, 0.125);
+            rotCorrection = MathUtil.clamp(AIM_ROTATION_GAIN * verticalOffset, -0.125, 0.125);
         } else if (!facingForward && limelightRear.hasValidTargets()) {
             final double horizontalOffset = limelightRear.getTargetHorizontalOffset().in(Units.Rotations);
-            rotCorrection = aimFF.calculate(horizontalOffset);
+            rotCorrection = MathUtil.clamp(AIM_ROTATION_GAIN * horizontalOffset, -0.125, 0.125);
         } else {
             rotCorrection = -MathUtil.applyDeadband(rotationSupplier.get(), 0.075);
         }
@@ -296,6 +299,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     // ── TRACK_NOTE ───────────────────────────────────────────────────────────
 
+    private static final double NOTE_APPROACH_GAIN = 2.0;
+    private static final double NOTE_LATERAL_GAIN = 10.0;
+
     private void applyTrackNote() {
         final ChassisSpeeds joystick = computeJoystickSpeeds();
         joystickSpeeds = joystick;
@@ -308,9 +314,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         final double horizontalOffsetDeg = limelightNote.getTargetHorizontalOffset().in(Units.Degrees);
         final double horizontalOffsetRot = limelightNote.getTargetHorizontalOffset().in(Units.Rotations);
 
+        // Robot-relative correction: X drives toward note, Y steers laterally to center it.
         final ChassisSpeeds correction = robotToField(new ChassisSpeeds(
-            2.0 / (Math.abs(horizontalOffsetDeg) + 1),
-            -horizontalOffsetRot * 10,
+            NOTE_APPROACH_GAIN / (Math.abs(horizontalOffsetDeg) + 1),
+            -horizontalOffsetRot * NOTE_LATERAL_GAIN,
             0
         ));
 
