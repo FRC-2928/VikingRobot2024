@@ -14,6 +14,13 @@ This document tracks the subsystem-by-subsystem refactor to the goal-based archi
 | 4 | Climber — full conversion (state machine + Superstructure + OI) | 🔄 Code complete, awaiting hardware testing |
 | 5 | Auto routines | ⬜ Pending |
 | 6 | Architecture docs | ⬜ Ongoing |
+| 7 | Bug fixes + alliance-relative corrections | ⬜ Pending |
+| 8 | OI wiring review + legacy command cleanup | ⬜ Pending |
+| 9 | Telemetry + diagnostics | ⬜ Pending |
+| 10 | Path following integration | ⬜ Pending |
+| 11 | Limelight localization | ⬜ Pending |
+| 12 | Simulation | ⬜ Pending |
+| 13 | Unit testing | ⬜ Pending |
 
 ---
 
@@ -266,6 +273,165 @@ Produce student-readable reference docs in `docs/architecture/`. Each doc should
 
 ---
 
+## Phase 7 — Bug Fixes + Alliance-Relative Corrections
+
+**Status:** ⬜ Pending
+
+### Goal
+Address known bugs and deferred complexity, primarily around alliance-dependent behavior. These must be resolved before hardware testing can produce reliable results. See `docs/architecture/alliance-rotation-notes.md` for full context.
+
+### Known Issues
+| Issue | Location | Description |
+|-------|----------|-------------|
+| `facingForward` check | `CommandSwerveDrivetrain.applyAimSpeaker()` | Uses `getCos() < 0` which is only correct for blue alliance. Red alliance faces the opposite direction toward their speaker. |
+| Alliance-relative target headings | Future TARGET_LOCK mode | Facing a field-absolute target (hub/speaker) requires resolving which `ForwardPerspective` mode to use with `FieldCentricFacingAngle`. Documented in alliance-rotation-notes.md. |
+| `AIM_ROTATION_GAIN` tuning | `CommandSwerveDrivetrain` | Gain value (5.0) may need per-alliance tuning if limelight offsets differ by mounting. |
+| `robotToField()` usage | `applyTrackNote()`, legacy commands | The frame conversion may be unnecessary — needs hardware verification. |
+| Limelight pipeline switching | `Shooter.applyShootSpeaker()` | Switches pipeline based on facing direction — same alliance bug as facingForward. |
+
+### Checklist
+- [ ] Fix facingForward to be alliance-aware (or remove — limelight has target → aim at it regardless)
+- [ ] Resolve alliance-rotation approach for target-heading modes
+- [ ] Hardware test aim-at-speaker on both alliances
+- [ ] Verify TRACK_NOTE correction direction is correct on both alliances
+- [ ] Review and fix any remaining limelight pipeline selection logic
+
+---
+
+## Phase 8 — OI Wiring Review + Legacy Command Cleanup
+
+**Status:** ⬜ Pending
+
+### Goal
+Ensure all driver/operator actions map correctly to the intent system, and remove command classes that no longer fit the goal-based architecture. All subsystem behavior should route through `applyGoal()` — commands that directly call `io.*` methods bypass the Superstructure and violate single-authority.
+
+### OI Wiring
+- [ ] Wire `INTAKE_DRIVE` goal to OI trigger (currently unbound — should pair with `ShooterGoal.INTAKE`)
+- [ ] Review all DriverOI/OperatorOI bindings for completeness
+- [ ] Verify intent revert logic (onFalse → safe defaults) covers all edge cases
+
+### Commands to Evaluate
+| Command | Action | Rationale |
+|---------|--------|-----------|
+| `ShootSpeaker` | Delete | Drive alignment logic now lives in `CommandSwerveDrivetrain.applyAimSpeaker()`. Shooter sequencing lives in `Shooter.applyShootSpeaker()`. |
+| `ShootFixed` | Delete | Covered by `ShooterGoal.SHOOT_FIXED` via the state machine. |
+| `IntakeGround` | Delete | Covered by `ShooterGoal.INTAKE` + `DriveGoal.TRACK_NOTE`. |
+| `ReadyShooter` | Delete | Covered by shooter state machine spin-up. |
+| `LookForNote` | Evaluate | Used in auto — may need to become a goal-based auto routine or be replaced. |
+| `DriveTime` | Keep (auto) | Simple timed drive — useful for auto, doesn't violate architecture. |
+| `TestDrive` | Keep (diag) | Diagnostic tool only. |
+
+### Checklist
+- [ ] Verify each command's behavior is fully replicated in the state machine
+- [ ] Update `Autonomous.java` to use goal-based sequences where commands are removed
+- [ ] Delete dead command files
+- [ ] `./gradlew build` passes clean
+
+---
+
+## Phase 9 — Telemetry + Diagnostics
+
+**Status:** ⬜ Pending
+
+### Goal
+Add comprehensive telemetry for hardware health monitoring and tuning. Make it easy to diagnose issues in AdvantageScope without needing to add ad-hoc logging.
+
+### Checklist
+- [ ] Per-module telemetry (drive/steer supply current, stator current, voltage, temperature) — model after 2026's `ModuleIOInputs` pattern
+- [ ] Register module signals with Superstructure's signal refresh orchestration
+- [ ] Consider offloading module telemetry reads to a separate thread (test latency impact)
+- [ ] Verify `Logger.processInputs("Shooter", inputs)` works after annotation processing generates AutoLogged class
+- [ ] Add CAN bus utilization / error frame logging
+- [ ] Log Superstructure cycle time (goal resolution + applyGoal duration)
+
+---
+
+## Phase 10 — Path Following Integration
+
+**Status:** ⬜ Pending
+
+### Goal
+Integrate BLine and/or Choreo path following with the goal-based architecture. Auto routines should set goals via the Superstructure, and the path follower should work through `DriveGoal.AUTONOMOUS` without bypassing the state machine.
+
+### Checklist
+- [ ] Verify BLine `FollowPath` builder works with `CommandSwerveDrivetrain`
+- [ ] Verify Choreo `AutoFactory` integrates correctly
+- [ ] Auto routines use `superstructure.setGoalCommand(RobotGoal.autonomous())` pattern
+- [ ] Path follower drives via `driveFieldOriented()` or `driveRobotOriented()` (not raw `setControl`)
+- [ ] Test pose reset at path start (alliance-aware)
+- [ ] Re-enable commented-out auto routes in `Autonomous.java`
+
+---
+
+## Phase 11 — Limelight Localization
+
+**Status:** ⬜ Pending
+
+### Goal
+Implement reliable vision-based pose estimation using Limelight MegaTag2, fused into the drivetrain's Kalman filter. This needs to be iterative — start with basic single-tag rejection and build toward multi-tag confidence weighting.
+
+### Iterative Plan
+1. **Basic fusion**: Accept MegaTag2 poses when tag count ≥ 1, reject when gyro rate > threshold
+2. **Trust scaling**: Adjust standard deviations based on tag count and average tag distance
+3. **Multi-camera**: Fuse from all available limelights with per-camera trust
+4. **IMU seeding**: Implement Limelight IMU modes (external seed vs internal) based on match state
+
+### Prerequisites
+- Upgrade LimelightHelpers to version with full MegaTag2 API
+- Determine limelight mounting positions and orientations for robot-to-camera transforms
+
+### Checklist
+- [ ] Upgrade LimelightHelpers library
+- [ ] Implement basic MegaTag2 fusion with gyro-rate rejection
+- [ ] Add trust scaling based on tag count
+- [ ] Test in simulation with simulated apriltag field
+- [ ] Hardware test: verify pose converges with real tags
+
+---
+
+## Phase 12 — Simulation
+
+**Status:** ⬜ Pending
+
+### Goal
+Get the robot fully functional in simulation for development without hardware access. This enables faster iteration on auto routines, state machine logic, and driver practice.
+
+### Checklist
+- [ ] Verify basic sim works (teleop drive, field visualization in AdvantageScope)
+- [ ] Add simulated shooter physics (flywheel spin-up time, pivot angle response)
+- [ ] Add simulated note detection for limelight (static game pieces on field)
+- [ ] Simulate apriltag visibility for localization testing
+- [ ] Auto routines run correctly in sim with path visualization
+- [ ] Document how to launch sim (`./gradlew simulateJava`) and connect AdvantageScope
+
+---
+
+## Phase 13 — Unit Testing
+
+**Status:** ⬜ Pending
+
+### Goal
+Add unit tests covering the most critical logic paths. Focus on state machines and goal resolution — these are the highest-value tests because they catch coordination bugs before hardware.
+
+### Priority Test Targets
+| Target | What to Test |
+|--------|--------------|
+| `GoalResolver` | Coordination rules (climber deploy forces shooter HOME, etc.) |
+| `Shooter` state machine | State transitions, firedTime logic, goal→wantedState mapping |
+| `Climber` state machine | Interlocks (won't deploy if shooter not safe), state transitions |
+| `CommandSwerveDrivetrain` | State machine transitions, joystick computation math |
+| `RobotGoal` builder | Safe defaults, builder pattern correctness |
+
+### Checklist
+- [ ] Set up test infrastructure (JUnit 5, WPILib test harness)
+- [ ] GoalResolver tests: verify coordination rules
+- [ ] Shooter state machine tests: all transitions + edge cases
+- [ ] Climber interlock tests: blocked states resolve correctly
+- [ ] Drive state machine tests: goal→state mapping
+- [ ] CI integration (tests run on every push)
+
+---
+
 ## Known Issues / Notes
 
 - ~~**`applyGoal()` signature mismatch**~~ — **Resolved in Phase 2.** `DriveSubsystem` now uses `applyGoal(SuperstructureContext ctx)`.
@@ -277,3 +443,8 @@ Produce student-readable reference docs in `docs/architecture/`. Each doc should
 - ~~**FinishAmpShot / PrepareAmpShot**~~ — **Resolved in Phase 3.** These commands and `ShootAmp`, `Idle`, `ShootFixedDiag` were deleted. Amp behavior is now handled entirely within `Shooter.applyAmp()` / `applyHome()`.
 - **Climber ratchet removed**: The ratchet servo was non-functional and has been deleted from `ClimberIOReal`. `ClimberGoal.LOCKED` now means motor output zero only (no servo). If a ratchet is added to the 2026 robot, a new IO implementation and servo logic will be needed.
 - **`ClimberIOInputsAutoLogged`**: `Logger.processInputs("Climber", inputs)` is commented out in `Climber.java` pending `./gradlew build` generating the AutoLogged class. Uncomment and update `inputs` field type after the first full build.
+- **Drive hierarchy collapsed**: `CommandSwerveDrivetrain` is now a single class extending `TunerSwerveDrivetrain` directly (intermediate layer deleted). All drive modes (TELEOP, LOCK, AIM_SPEAKER, TRACK_NOTE, INTAKE_DRIVE) are implemented in the state machine.
+- **OI decoupled from commands**: Triggers set intents directly on `GoalResolver` via `onTrue`/`onFalse` lambdas. No more command wrappers for intent-setting.
+- **Signal refresh orchestration**: Superstructure batch-refreshes all registered `BaseStatusSignal` arrays before goal resolution. Subsystems register via `registerSignals()`.
+- **RobotContainer singleton**: `Robot.cont` eliminated. All access via `RobotContainer.getInstance()` with cached locals.
+- **State snapshot**: `CommandSwerveDrivetrain` snapshots `getState()` once per periodic into `mCurrentSwerveState` for thread safety.
