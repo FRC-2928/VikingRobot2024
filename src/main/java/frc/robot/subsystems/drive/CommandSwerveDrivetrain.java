@@ -34,6 +34,7 @@ import static edu.wpi.first.units.Units.*;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.superstructure.SuperstructureContext;
+import frc.robot.utils.SignalBundle;
 import frc.robot.vision.Limelight;
 import frc.robot.vision.LimelightHelpers;
 
@@ -167,6 +168,79 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private final BaseStatusSignal[] mPigeonAccelSignals = new BaseStatusSignal[2];
     private ChassisSpeeds mPrevChassisSpeeds = new ChassisSpeeds();
 
+    // ── Module telemetry ────────────────────────────────────────────────────
+
+    public static class ModuleInputs {
+        public double driveSupplyCurrentAmps = 0.0;
+        public double driveStatorCurrentAmps = 0.0;
+        public double driveAppliedVolts = 0.0;
+        public double driveTemperatureCelsius = 0.0;
+        public double steerSupplyCurrentAmps = 0.0;
+        public double steerStatorCurrentAmps = 0.0;
+        public double steerAppliedVolts = 0.0;
+        public double steerTemperatureCelsius = 0.0;
+    }
+
+    private static final String[] MODULE_NAMES = { "FrontLeft", "FrontRight", "BackLeft", "BackRight" };
+
+    private final ModuleInputs[] mModuleInputs = {
+        new ModuleInputs(), new ModuleInputs(), new ModuleInputs(), new ModuleInputs()
+    };
+
+    @SuppressWarnings("unchecked")
+    private final SignalBundle<ModuleInputs>[] mModuleBundles = new SignalBundle[4];
+
+    private SignalBundle<ModuleInputs> createModuleBundle(int moduleIndex) {
+        var drive = getModule(moduleIndex).getDriveMotor();
+        var steer = getModule(moduleIndex).getSteerMotor();
+
+        var driveSupply = drive.getSupplyCurrent();
+        var driveStator = drive.getStatorCurrent();
+        var driveVolts  = drive.getMotorVoltage();
+        var driveTemp   = drive.getDeviceTemp();
+        var steerSupply = steer.getSupplyCurrent();
+        var steerStator = steer.getStatorCurrent();
+        var steerVolts  = steer.getMotorVoltage();
+        var steerTemp   = steer.getDeviceTemp();
+
+        return new SignalBundle<>(
+            new BaseStatusSignal[] {
+                driveSupply, driveStator, driveVolts, driveTemp,
+                steerSupply, steerStator, steerVolts, steerTemp
+            },
+            inputs -> {
+                inputs.driveSupplyCurrentAmps  = driveSupply.getValueAsDouble();
+                inputs.driveStatorCurrentAmps  = driveStator.getValueAsDouble();
+                inputs.driveAppliedVolts       = driveVolts.getValueAsDouble();
+                inputs.driveTemperatureCelsius = driveTemp.getValueAsDouble();
+                inputs.steerSupplyCurrentAmps  = steerSupply.getValueAsDouble();
+                inputs.steerStatorCurrentAmps  = steerStator.getValueAsDouble();
+                inputs.steerAppliedVolts       = steerVolts.getValueAsDouble();
+                inputs.steerTemperatureCelsius = steerTemp.getValueAsDouble();
+            }
+        );
+    }
+
+    public BaseStatusSignal[] getModuleStatusSignals() {
+        return SignalBundle.collectSignals(mModuleBundles);
+    }
+
+    private void updateAndLogModuleTelemetry() {
+        for (int i = 0; i < 4; i++) {
+            mModuleBundles[i].update(mModuleInputs[i]);
+            var m = mModuleInputs[i];
+            String prefix = "Drive/Modules/" + MODULE_NAMES[i] + "/";
+            Logger.recordOutput(prefix + "DriveSupplyCurrentAmps", m.driveSupplyCurrentAmps);
+            Logger.recordOutput(prefix + "DriveStatorCurrentAmps", m.driveStatorCurrentAmps);
+            Logger.recordOutput(prefix + "DriveAppliedVolts", m.driveAppliedVolts);
+            Logger.recordOutput(prefix + "DriveTemperatureCelsius", m.driveTemperatureCelsius);
+            Logger.recordOutput(prefix + "SteerSupplyCurrentAmps", m.steerSupplyCurrentAmps);
+            Logger.recordOutput(prefix + "SteerStatorCurrentAmps", m.steerStatorCurrentAmps);
+            Logger.recordOutput(prefix + "SteerAppliedVolts", m.steerAppliedVolts);
+            Logger.recordOutput(prefix + "SteerTemperatureCelsius", m.steerTemperatureCelsius);
+        }
+    }
+
     // ── Limelights ───────────────────────────────────────────────────────────
 
     public final Limelight limelightNote    = new Limelight("limelight-note");
@@ -203,6 +277,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         mPigeonAccelSignals[0] = pigeon.getAccelerationX();
         mPigeonAccelSignals[1] = pigeon.getAccelerationY();
         BaseStatusSignal.setUpdateFrequencyForAll(100, mPigeonAccelSignals);
+
+        // Create per-module signal bundles for telemetry
+        for (int i = 0; i < 4; i++) {
+            mModuleBundles[i] = createModuleBundle(i);
+        }
     }
 
     // ── Goal API ──────────────────────────────────────────────────────────────
@@ -266,6 +345,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         Logger.recordOutput("Drive/ModuleTargets", mCurrentSwerveState.ModuleTargets);
         Logger.recordOutput("Drive/OdometryPeriod", mCurrentSwerveState.OdometryPeriod);
         Logger.recordOutput("Drive/SystemState",   systemState.toString());
+
+        updateAndLogModuleTelemetry();
     }
 
     private SystemState handleStateTransition() {

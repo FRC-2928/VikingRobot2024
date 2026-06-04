@@ -9,6 +9,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Shooter;
@@ -37,7 +38,7 @@ public class Superstructure extends SubsystemBase {
     public final GoalResolver resolver = new GoalResolver();
 
     // Per-subsystem signal registration. Preserves insertion order for diagnostics.
-    private final Map<SubsystemBase, List<BaseStatusSignal>> mSubsystemSignalsMap = new LinkedHashMap<>();
+    private final Map<Subsystem, List<BaseStatusSignal>> mSubsystemSignalsMap = new LinkedHashMap<>();
 
     // Flattened cache of all signals for the batch refresh call. Rebuilt on registration.
     private BaseStatusSignal[] mAllSignals = new BaseStatusSignal[0];
@@ -54,7 +55,7 @@ public class Superstructure extends SubsystemBase {
      * Register status signals for a subsystem. Call during subsystem construction.
      * Signals will be batch-refreshed each cycle before goal resolution.
      */
-    public void registerSignals(SubsystemBase subsystem, BaseStatusSignal... signals) {
+    public void registerSignals(Subsystem subsystem, BaseStatusSignal... signals) {
         List<BaseStatusSignal> list = mSubsystemSignalsMap.computeIfAbsent(subsystem, k -> new ArrayList<>());
         for (BaseStatusSignal signal : signals) {
             list.add(signal);
