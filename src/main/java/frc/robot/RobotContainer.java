@@ -64,7 +64,7 @@ public class RobotContainer {
 
 		this.superstructure.registerSignals(this.shooter, this.shooter.getStatusSignals());
 		this.superstructure.registerSignals(this.climber, this.climber.getStatusSignals());
-		this.superstructure.registerSignals(this.drivetrain, this.drivetrain.getModuleStatusSignals());
+		this.superstructure.registerSignals(this.drivetrain, this.drivetrain.getStatusSignals());
 
 		this.diag.chirp(600, 500);
 		this.diag.chirp(900, 500);

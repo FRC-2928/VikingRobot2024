@@ -221,8 +221,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         );
     }
 
-    public BaseStatusSignal[] getModuleStatusSignals() {
-        return SignalBundle.collectSignals(mModuleBundles);
+    public BaseStatusSignal[] getStatusSignals() {
+        BaseStatusSignal[] moduleSignals = SignalBundle.collectSignals(mModuleBundles);
+        BaseStatusSignal[] all = new BaseStatusSignal[moduleSignals.length + mPigeonAccelSignals.length];
+        System.arraycopy(moduleSignals, 0, all, 0, moduleSignals.length);
+        System.arraycopy(mPigeonAccelSignals, 0, all, moduleSignals.length, mPigeonAccelSignals.length);
+        return all;
     }
 
     private void updateAndLogModuleTelemetry() {
@@ -580,7 +584,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         // Measured acceleration: Pigeon2 accelerometer (horizontal axes only, gravity-free).
         // This reflects actual robot body acceleration regardless of wheel behavior.
-        BaseStatusSignal.refreshAll(mPigeonAccelSignals);
+        // Signals are refreshed by Superstructure's batch refresh each cycle.
         double pigeonAxMps2  = mPigeonAccelSignals[0].getValueAsDouble() * G_TO_MPS2;
         double pigeonAyMps2  = mPigeonAccelSignals[1].getValueAsDouble() * G_TO_MPS2;
         double measuredAccel = Math.hypot(pigeonAxMps2, pigeonAyMps2);

@@ -30,6 +30,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.Constants;
 import frc.robot.utils.STalonFX;
+import frc.robot.utils.SignalBundle;
 
 public class ShooterIOReal implements ShooterIO {
 	public ShooterIOReal(final Shooter shooter) {
@@ -164,6 +165,16 @@ public class ShooterIOReal implements ShooterIO {
 							.in(Units.Rotations)
 					)
 			);
+
+		this.mSignalBundle = new SignalBundle<>(
+			new BaseStatusSignal[] { this.angle, this.angleSpeed, this.velocityA, this.velocityB },
+			inputs -> {
+				inputs.angle = Units.Rotations.of(this.angle.getValueAsDouble());
+				inputs.angleSpeed = Units.RotationsPerSecond.of(this.angleSpeed.getValueAsDouble());
+				inputs.flywheelSpeedA = Units.RotationsPerSecond.of(this.velocityA.getValueAsDouble());
+				inputs.flywheelSpeedB = Units.RotationsPerSecond.of(this.velocityB.getValueAsDouble());
+			}
+		);
 	}
 
 	public final STalonFX pivot = new STalonFX(Constants.CAN.CTRE.shooterPivot, Constants.CAN.CTRE.bus);
@@ -183,9 +194,11 @@ public class ShooterIOReal implements ShooterIO {
 
 	public final SysIdRoutine sysIdPivot;
 
+	private SignalBundle<ShooterIOInputs> mSignalBundle;
+
 	@Override
 	public BaseStatusSignal[] getStatusSignals() {
-		return new BaseStatusSignal[] { angle, angleSpeed, velocityA, velocityB };
+		return mSignalBundle.signals();
 	}
 
 	@Override
@@ -247,10 +260,7 @@ public class ShooterIOReal implements ShooterIO {
 
 	@Override
 	public void updateInputs(final ShooterIOInputs inputs) {
-		inputs.angle = Units.Rotations.of(this.angle.getValueAsDouble());
-		inputs.angleSpeed = Units.RotationsPerSecond.of(this.angleSpeed.getValueAsDouble());
-		inputs.flywheelSpeedA = Units.RotationsPerSecond.of(this.velocityA.getValueAsDouble());
-		inputs.flywheelSpeedB = Units.RotationsPerSecond.of(this.velocityB.getValueAsDouble());
+		mSignalBundle.update(inputs);
 		inputs.holdingNote = !this.sensors.isFwdLimitSwitchClosed();
 	}
 }

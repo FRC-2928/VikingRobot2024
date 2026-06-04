@@ -15,6 +15,7 @@ import com.ctre.phoenix6.signals.ReverseLimitValue;
 import edu.wpi.first.units.measure.Angle;
 import frc.robot.Constants;
 import frc.robot.utils.STalonFX;
+import frc.robot.utils.SignalBundle;
 
 public class ClimberIOReal implements ClimberIO {
 	public ClimberIOReal() {
@@ -41,12 +42,22 @@ public class ClimberIOReal implements ClimberIO {
 
 		BaseStatusSignal.setUpdateFrequencyForAll(100, this.position, this.home);
 		this.actuator.optimizeBusUtilization();
+
+		this.mSignalBundle = new SignalBundle<>(
+			new BaseStatusSignal[] { this.position, this.home },
+			inputs -> {
+				inputs.position = this.position.getValueAsDouble();
+				inputs.home = this.home.getValue() == ReverseLimitValue.ClosedToGround;
+			}
+		);
 	}
 
 	public final STalonFX actuator = new STalonFX(Constants.CAN.CTRE.climber, Constants.CAN.CTRE.bus);
 
 	public final StatusSignal<Angle> position;
 	public final StatusSignal<ReverseLimitValue> home;
+
+	private final SignalBundle<ClimberIOInputs> mSignalBundle;
 
 	@Override
 	public void set(final double position) {
@@ -65,13 +76,12 @@ public class ClimberIOReal implements ClimberIO {
 
 	@Override
 	public BaseStatusSignal[] getStatusSignals() {
-		return new BaseStatusSignal[] { this.position, this.home };
+		return mSignalBundle.signals();
 	}
 
 	@Override
 	public void updateInputs(final ClimberIOInputs inputs) {
-		inputs.position = this.position.getValueAsDouble();
-		inputs.home = this.home.getValue() == ReverseLimitValue.ClosedToGround;
+		mSignalBundle.update(inputs);
 	}
 
 }
