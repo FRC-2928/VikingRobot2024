@@ -14,7 +14,7 @@ import com.ctre.phoenix6.signals.ReverseLimitValue;
 
 import edu.wpi.first.units.measure.Angle;
 import frc.robot.Constants;
-import frc.robot.utils.STalonFX;
+import com.ctre.phoenix6.hardware.TalonFX;
 import frc.robot.utils.SignalBundle;
 
 public class ClimberIOReal implements ClimberIO {
@@ -52,7 +52,7 @@ public class ClimberIOReal implements ClimberIO {
 		);
 	}
 
-	public final STalonFX actuator = new STalonFX(Constants.CAN.CTRE.climber, Constants.CAN.CTRE.bus);
+	public final TalonFX actuator = new TalonFX(Constants.CAN.CTRE.climber, Constants.CAN.CTRE.bus);
 
 	public final StatusSignal<Angle> position;
 	public final StatusSignal<ReverseLimitValue> home;

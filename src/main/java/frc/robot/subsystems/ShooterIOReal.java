@@ -10,6 +10,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.controls.VelocityDutyCycle;
@@ -29,7 +30,7 @@ import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog.State;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.Constants;
-import frc.robot.utils.STalonFX;
+
 import frc.robot.utils.SignalBundle;
 
 public class ShooterIOReal implements ShooterIO {
@@ -177,10 +178,10 @@ public class ShooterIOReal implements ShooterIO {
 		);
 	}
 
-	public final STalonFX pivot = new STalonFX(Constants.CAN.CTRE.shooterPivot, Constants.CAN.CTRE.bus);
+	public final TalonFX pivot = new TalonFX(Constants.CAN.CTRE.shooterPivot, Constants.CAN.CTRE.bus);
 	public final CANcoder encoder = new CANcoder(Constants.CAN.CTRE.shooterPivot, Constants.CAN.CTRE.bus);
-	public final STalonFX flywheelA = new STalonFX(Constants.CAN.CTRE.shooterFlywheelA, Constants.CAN.CTRE.bus);
-	public final STalonFX flywheelB = new STalonFX(Constants.CAN.CTRE.shooterFlywheelB, Constants.CAN.CTRE.bus);
+	public final TalonFX flywheelA = new TalonFX(Constants.CAN.CTRE.shooterFlywheelA, Constants.CAN.CTRE.bus);
+	public final TalonFX flywheelB = new TalonFX(Constants.CAN.CTRE.shooterFlywheelB, Constants.CAN.CTRE.bus);
 	public final TalonSRX feeder = new TalonSRX(Constants.CAN.Misc.feederLauncher);
 	public final TalonSRX intake = new TalonSRX(Constants.CAN.Misc.intakeRoller);
 	private final Servo ampServoA = new Servo(Constants.PWM.ampBarServoA);
