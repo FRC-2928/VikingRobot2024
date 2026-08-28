@@ -181,3 +181,6 @@ ctre_sim/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# graphify knowledge graph output (per-developer, regenerable; contains machine-local paths)
+graphify-out/
